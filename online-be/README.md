@@ -29,19 +29,17 @@
 
 ```bash
 $ npm install
-```
-
-## Compile and run the project
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+$ cp .env.example .env
+$ npm run migration:run
+$ npm run start:dev 
+# One-time command to create first admin
+curl -X POST http://localhost:8000/auth/setup-first-admin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@company.com",
+    "password": "Admin123!",
+    "name": "Super Admin"
+  }'
 ```
 
 ## Run tests
