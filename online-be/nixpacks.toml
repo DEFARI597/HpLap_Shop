@@ -5,7 +5,7 @@ cmds = ["npm install"]
 cmds = ["npm run build"]
 
 [start]
-cmd = "node dist/main.js"
+cmd = "node dist/main.ts"
 
 [watch]
 paths = ["src/**/*.ts"]
