@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User, UserRole } from '../users/users.entity';
+import { User, UserRole } from '../entity/users.entity';
 import { AuthService } from '../auth/auth.service';
 import { UpdateRoleDto } from '../admin/dto/update-role.dto';
 
