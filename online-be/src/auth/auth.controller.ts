@@ -12,7 +12,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
-import { UserRole } from '../users/users.entity';
+import { UserRole } from '../entity/users.entity';
 import * as bcrypt from 'bcrypt';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -121,6 +121,7 @@ export class AuthController {
         password: hashedPassword,
         name: name || 'System Administrator',
         role: UserRole.ADMIN,
+        isSuperAdmin: true,
       });
 
       return {
