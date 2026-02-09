@@ -12,12 +12,20 @@ const nextConfig: NextConfig = {
         destination: '/admin/login',
       },
       {
+        source: '/admin/users',
+        destination: '/admin/users',
+      },
+      {
+        source: '/admin/categories',
+        destination: '/admin/categories',
+      },
+      {
         source: '/register',
-        destination: '/user-page/register',
+        destination: '/users/register',
       },
       {
         source: '/login',
-        destination: '/user-page/login',
+        destination: '/users/login',
       },
     ];
   },

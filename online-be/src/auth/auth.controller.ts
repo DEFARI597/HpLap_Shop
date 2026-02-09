@@ -144,7 +144,7 @@ export class AuthController {
         throw error;
       }
       throw new InternalServerErrorException(
-        'Failed to create initial admin: ' + error.message,
+        'Failed to create initial admin'  
       );
     }
   }

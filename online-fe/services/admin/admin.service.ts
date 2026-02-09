@@ -19,6 +19,10 @@ class AdminService {
         const response = await apiClient.post<AuthResponse>('/admin/login', data);
         return response.success ? response.data : undefined;
     }
+
+    async getAllUsers(page: number, limit: number) {
+        
+    }
 }
 
 export const adminService = new AdminService();

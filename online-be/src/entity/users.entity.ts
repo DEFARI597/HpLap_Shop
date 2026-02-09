@@ -4,43 +4,43 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-} from 'typeorm';
+} from "typeorm";
 
 export enum UserRole {
-  USER = 'user',
-  ADMIN = 'admin',
+  USER = "user",
+  ADMIN = "admin",
 }
 
-@Entity('users')
+@Entity("users")
 export class User {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
-  @Column({ type: 'varchar', length: 100 })
-  name: string;
+  @Column({ type: "varchar", length: 100 })
+  name!: string;
 
-  @Column({ type: 'varchar', length: 150 })
-  email: string;
+  @Column({ type: "varchar", length: 150 })
+  email!: string;
 
-  @Column({ type: 'varchar', length: 255 })
-  password: string;
+  @Column({ type: "varchar", length: 255 })
+  password!: string;
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: UserRole,
     default: UserRole.USER,
   })
-  role: UserRole;
+  role!: UserRole;
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
-  createdAt: Date;
+  @CreateDateColumn({ name: "created_at", type: "timestamp" })
+  createdAt!: Date;
 
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
-  updatedAt: Date;
+  @UpdateDateColumn({ name: "updated_at", type: "timestamp" })
+  updatedAt!: Date;
 
   @Column({ default: false })
-  isSuperAdmin: boolean;
+  isSuperAdmin!: boolean;
 
   @Column({ default: true })
-  isActive: boolean;
+  isActive!: boolean;
 }

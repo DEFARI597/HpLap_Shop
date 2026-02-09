@@ -1,8 +1,13 @@
+export enum UserRole {
+    USER = "user",
+    ADMIN = "admin",
+}
+
 export interface UserEntity {
     id: number;
     email: string;
     name: string;
-    role: 'user' | 'admin';
+    role: UserRole;
     isSuperAdmin: boolean;
     isActive: boolean;
     createdAt: string;
