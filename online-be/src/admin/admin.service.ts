@@ -41,49 +41,68 @@ export class AdminService {
     };
   }
 
-  async getAllUsers(query: GetUsersQueryDto): Promise<UsersPaginatedDto> {
-    const {
-      page = 1,
-      limit = 10,
-      search,
-      role,
-      sortBy = "createdAt",
-      sortOrder = "DESC",
-    } = query;
-    const skip = (page - 1) * limit;
-
-    const where: any = {};
-
-    if (search) {
-      where.name = Like(`%${search}%`);
-    }
-
-    if (role) {
-      where.role = role;
-    }
-
-    const [users, total] = await this.usersRepository.findAndCount({
-      select: ["id", "email", "name", "role", "createdAt"],
-      where,
-      skip,
-      take: limit,
-      order: { [sortBy]: sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC" },
-    });
-
-    return {
-      data: users.map((user) => ({
-        ...user,
-        id: user.id,
-        createdAt: user.createdAt.toISOString(),
-      })),
-      meta: {
-        total,
+    async getAllUsers(query: GetUsersQueryDto): Promise<UsersPaginatedDto> {
+      const {
         page,
         limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  }
+        search,
+        role,
+        sortBy = "createdAt",
+        sortOrder = "DESC",
+      } = query;
+
+      const skip = page !== undefined && limit !== undefined
+        ? (page - 1) * limit
+        : undefined;
+
+      const where: any = {};
+
+      if (search) {
+        where.name = Like(`%${search}%`);
+      }
+
+      if (role) {
+        where.role = role;
+      }
+
+      const queryOptions: any = {
+        select: ["id", "email", "name", "role", "createdAt"],
+        where,
+        order: { [sortBy]: sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC" },
+      };
+
+      if (skip !== undefined && limit !== undefined) {
+        queryOptions.skip = skip;
+        queryOptions.take = limit;
+      }
+
+      const [users, total] = await this.usersRepository.findAndCount(queryOptions);
+
+      const meta: any = {
+        total,
+      };
+
+      if (page !== undefined) {
+        meta.page = page;
+      }
+
+      if (limit !== undefined) {
+        meta.limit = limit;
+      }
+
+      if (page !== undefined && limit !== undefined) {
+        meta.totalPages = Math.ceil(total / limit);
+      }
+
+      return {
+        data: users.map((user) => ({
+          ...user,
+          id: user.id,
+          createdAt: user.createdAt.toISOString(),
+        })),
+        meta,
+      };
+    }
 
   async updateUserRole(userId: number, updateRoleDto: UpdateRoleDto) {
     const user = await this.usersRepository.findOne({

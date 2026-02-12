@@ -11,6 +11,7 @@ export interface AuthUser {
     id: number;
     email: string;
     name: string;
+    phone: string;
     role: 'user' | 'admin';
     isAdminVerified: boolean;
 }

@@ -5,18 +5,21 @@ export class RegisterDto {
   @ApiProperty()
   @IsString()
   @MinLength(2)
-  name: string;
+  name!: string;
 
   @ApiProperty()
   @IsEmail()
-  email: string;
+  email!: string;
+  
+  @ApiProperty()
+  @IsString()
+  phone!: string;
 
   @ApiProperty({ minLength: 6 })
   @IsString()
   @MinLength(6)
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/, {
-    message:
-      "Password must contain at least one uppercase, one lowercase, and one number",
+    message: "Password must contain at least one uppercase, one lowercase, and one number",
   })
-  password: string;
+  password!: string;
 }

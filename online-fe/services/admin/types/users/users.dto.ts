@@ -1,10 +1,11 @@
-import { UserRole } from "@/models/users.model";
+import {UserRole} from "@/models/users.model";
 
-export interface UserDto {
+ export interface UserDto {
     id: string | number;
     email: string;
     name: string;
     role: UserRole;
+    phone?: string;
     createdAt: string | Date;
 }
 
@@ -19,12 +20,12 @@ export interface UsersPaginatedDto {
 }
 
 export interface GetUsersQueryDto {
-    page?: number;
-    limit?: number;
+    page: number;
+    limit: number;
     search?: string;
     role?: string;
-    sortBy?: string;
-    sortOrder?: "ASC" | "DESC";
+    sortBy: string;
+    sortOrder: "ASC" | "DESC";
 }
 
 export interface UsersFilterDto {

@@ -31,6 +31,7 @@ export class AuthService {
     const user = await this.usersService.create({
       name,
       email,
+      phone: '',
       password: hashedPassword,
       role: UserRole.USER,
     });
@@ -39,6 +40,7 @@ export class AuthService {
       id: user.id,
       name: user.name,
       email: user.email,
+      phone: user.phone,
       role: user.role,
       createdAt: user.createdAt,
     };
@@ -60,6 +62,7 @@ export class AuthService {
     const payload = {
       sub: user.id,
       email: user.email,
+      phone: user.phone,
       role: user.role,
       name: user.name,
     };
@@ -77,6 +80,7 @@ export class AuthService {
         id: user.id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         role: user.role,
         createdAt: user.createdAt,
       },
