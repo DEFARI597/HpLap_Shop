@@ -32,20 +32,20 @@ class ApiClient {
             });
 
             const contentType = response.headers.get('content-type');
-            let data: Record<string, unknown> | string = {};
+            let responseData: any = {};
 
             if (contentType && contentType.includes('application/json')) {
-                data = await response.json();
+                responseData = await response.json();
             } else if (response.status === 204) {
-                data = {};
+                responseData = {};
             } else {
-                data = await response.text();
+                responseData = await response.text();
             }
 
             if (!response.ok) {
-                const errorMsg = typeof data === 'string'
-                    ? data
-                    : (data as Record<string, unknown>).message || (data as Record<string, unknown>).error || `HTTP ${response.status}`;
+                const errorMsg = typeof responseData === 'string'
+                    ? responseData
+                    : responseData.message || responseData.error || `HTTP ${response.status}`;
                 return {
                     success: false,
                     error: String(errorMsg),
@@ -53,12 +53,9 @@ class ApiClient {
                 };
             }
 
-            
             return {
                 success: true,
-                data: (typeof data === 'string' ? data : (data as Record<string, unknown>).data || data) as T,
-                message: typeof data === 'string' ? undefined : (data as Record<string, unknown>).message as string | undefined,
-                meta: typeof data === 'string' ? undefined : (data as Record<string, unknown>).meta as { page?: number; limit?: number; total?: number; totalPages?: number } | undefined,
+                data: responseData, 
                 status: response.status,
             };
         } catch (error: unknown) {
@@ -70,11 +67,8 @@ class ApiClient {
             };
         }
     }
-
-    
     private getToken(): string | null {
         if (typeof window === 'undefined') return null;
-
         return (
             localStorage.getItem('admin_token') ||
             localStorage.getItem('auth_token') ||
@@ -139,20 +133,19 @@ class ApiClient {
                 body: formData,
             });
 
-            const data = await response.json() as Record<string, unknown>;
+            const responseData = await response.json();
 
             if (!response.ok) {
                 return {
                     success: false,
-                    error: String(data.message || `HTTP ${response.status}`),
+                    error: String(responseData.message || `HTTP ${response.status}`),
                     status: response.status,
                 };
             }
 
             return {
                 success: true,
-                data: (data.data || data) as T,
-                message: data.message as string | undefined,
+                data: responseData,
                 status: response.status,
             };
         } catch (error: unknown) {

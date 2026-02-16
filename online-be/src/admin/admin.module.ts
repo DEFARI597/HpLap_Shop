@@ -1,13 +1,13 @@
-import { Module, forwardRef } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AdminService } from './admin.service';
-import { AdminController } from './admin.controller';
-import { AdminGuard } from './guards/admin.guards';
-import { User } from '../entity/users.entity';
-import { AuthModule } from '../auth/auth.module';
-import { UsersModule } from '../users/users.module';
+import { Module, forwardRef } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { JwtModule } from "@nestjs/jwt";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { AdminService } from "./admin.service";
+import { AdminController } from "./admin.controller";
+import { AdminGuard } from "./guards/admin.guards";
+import { User } from "../entity/users.entity";
+import { AuthModule } from "../auth/auth.module";
+import { UsersModule } from "../users/users.module";
 
 @Module({
   imports: [

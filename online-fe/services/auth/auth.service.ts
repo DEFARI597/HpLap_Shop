@@ -11,6 +11,7 @@ export interface AuthUser {
     id: number;
     email: string;
     name: string;
+    phone: string;
     role: 'user' | 'admin';
     isAdminVerified: boolean;
 }
@@ -28,3 +29,5 @@ class AuthService {
 }
 
 export const authService = new AuthService();
+
+export type { LoginDto };

@@ -11,8 +11,8 @@ import {
 import { UsersService } from './users.service';
 
 export class CreateUserDto {
-  name: string;
-  email: string;
+  name!: string;
+  email!: string;
 }
 
 export class UpdateUserDto {
