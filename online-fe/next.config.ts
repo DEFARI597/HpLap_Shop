@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
         destination: '/admin/categories',
       },
       {
+        source: '/admin/categories/add-categories',
+        destination: '/admin/categories/add-categories'
+      },
+      {
         source: '/register',
         destination: '/users/register',
       },

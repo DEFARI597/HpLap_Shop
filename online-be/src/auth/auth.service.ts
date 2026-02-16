@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { UserRole } from '../entity/users.entity';
+import { SetupFirstAdminDto } from './dto/admin/setup-admin.dto';
 
 @Injectable()
 export class AuthService {
@@ -131,20 +132,34 @@ export class AuthService {
     };
   }
 
-  async setupFirstAdmin(email: string, password: string, name?: string) {
-    const adminCount = await this.usersService.countAdmins();
+// In your AuthService
+async setupFirstAdmin(setupFirstAdminDto: SetupFirstAdminDto) {
+  const { email, password, name, phone } = setupFirstAdminDto;
 
-    if (adminCount > 0) {
-      throw new ConflictException('Initial admin already exists');
-    }
+  const adminCount = await this.usersService.countAdmins();
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    await this.usersService.create({
-      email,
-      password: hashedPassword,
-      name: name || 'System Administrator',
-      role: UserRole.ADMIN,
-    });
+  if (adminCount > 0) {
+    throw new ConflictException('Initial admin already exists');
   }
+
+  // Check if email already exists
+  const existingUser = await this.usersService.findByEmail(email);
+  if (existingUser) {
+    throw new ConflictException('Email already registered');
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const newAdmin = await this.usersService.create({
+    email: email.toLowerCase().trim(),
+    password: hashedPassword,
+    name: name?.trim() || 'System Administrator',
+    phone: phone || '',
+    role: UserRole.ADMIN,
+    isSuperAdmin: true, // You might want to add this flag
+  });
+
+  const { password: result } = newAdmin;
+  return result;
+}
 }
