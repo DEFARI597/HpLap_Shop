@@ -1,245 +1,198 @@
-import { CategoriesEntity } from "@/models/categories.model";
-import { CreateCategoryDto, UpdateCategoryDto, BulkUpdateDto, CategoryPath } from './types/categories.type';
-import { apiClient } from '../api-client';
+// services/category.service.ts
+import { CreateCategoryDto, UpdateCategoryDto, CategoryStats, SearchParams } from './types/categories.type';
+import { CategoriesModels } from '@/models/categories.model';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 class CategoryService {
     private baseUrl: string;
 
     constructor() {
-        this.baseUrl = '/categories'; 
+        this.baseUrl = `${API_BASE_URL}/categories`;
     }
 
-    // GET /categories - Get all categories
-    async getAllCategories(hierarchy: boolean = false): Promise<CategoriesEntity[]> {
-        try {
-            const response = await apiClient.get<CategoriesEntity[]>(
-                this.baseUrl,
-                hierarchy ? { hierarchy: 'true' } : undefined
-            );
-
-            if (!response.success) {
-                throw new Error(response.error);
-            }
-
-            return response.data || [];
-        } catch (error) {
-            console.error('Error fetching categories:', error);
-            throw error;
+    private async handleResponse<T>(response: Response): Promise<T> {
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.message || `HTTP error! status: ${response.status}`);
         }
-    }
 
-    // GET /categories/active - Get active categories
-    async getActiveCategories(): Promise<CategoriesEntity[]> {
-        try {
-            const response = await apiClient.get<CategoriesEntity[]>(`${this.baseUrl}/active`);
-
-            if (!response.success) {
-                throw new Error(response.error);
-            }
-
-            return response.data || [];
-        } catch (error) {
-            console.error('Error fetching active categories:', error);
-            throw error;
+        // For 204 No Content responses
+        if (response.status === 204) {
+            return null as T;
         }
+
+        return await response.json();
     }
 
-    // GET /categories/:id - Get single category
-    async getCategoryById(id: number): Promise<CategoriesEntity> {
-        try {
-            const response = await apiClient.get<CategoriesEntity>(`${this.baseUrl}/${id}`);
-
-            if (!response.success) {
-                throw new Error(response.error);
-            }
-
-            if (!response.data) {
-                throw new Error('Category not found');
-            }
-
-            return response.data;
-        } catch (error) {
-            console.error(`Error fetching category ${id}:`, error);
-            throw error;
-        }
+    private getHeaders(): HeadersInit {
+        return {
+            'Content-Type': 'application/json',
+        };
     }
 
-    // GET /categories/:id/subcategories - Get subcategories
-    async getSubcategories(id: number): Promise<CategoriesEntity[]> {
+    // Create a new category
+    async createCategory(data: CreateCategoryDto): Promise<CategoriesModels> {
         try {
-            const response = await apiClient.get<CategoriesEntity[]>(`${this.baseUrl}/${id}/subcategories`);
-
-            if (!response.success) {
-                throw new Error(response.error);
-            }
-
-            return response.data || [];
-        } catch (error) {
-            console.error(`Error fetching subcategories for ${id}:`, error);
-            throw error;
-        }
-    }
-
-    // GET /categories/:id/path - Get path to root (breadcrumb)
-    async getCategoryPath(id: number): Promise<CategoriesEntity[]> {
-        try {
-            const response = await apiClient.get<CategoriesEntity[]>(`${this.baseUrl}/${id}/path`);
-
-            if (!response.success) {
-                throw new Error(response.error);
-            }
-
-            return response.data || [];
-        } catch (error) {
-            console.error(`Error fetching path for category ${id}:`, error);
-            throw error;
-        }
-    }
-
-    // POST /categories - Create new category
-    async createCategory(data: CreateCategoryDto): Promise<CategoriesEntity> {
-        try {
-            const response = await apiClient.post<CategoriesEntity>(this.baseUrl, data);
-
-            if (!response.success) {
-                throw new Error(response.error);
-            }
-
-            if (!response.data) {
-                throw new Error('Failed to create category');
-            }
-
-            return response.data;
+            const response = await fetch(this.baseUrl, {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify(data),
+            });
+            return this.handleResponse<CategoriesModels>(response);
         } catch (error) {
             console.error('Error creating category:', error);
             throw error;
         }
     }
 
-    // PATCH /categories/:id - Update category
-    async updateCategory(id: number, data: UpdateCategoryDto): Promise<CategoriesEntity> {
+    // Get all categories with optional filter
+    async getAllCategories(active?: boolean): Promise<CategoriesModels[]> {
         try {
-            const response = await apiClient.patch<CategoriesEntity>(`${this.baseUrl}/${id}`, data);
+            const url = active !== undefined
+                ? `${this.baseUrl}?active=${active}`
+                : this.baseUrl;
 
-            if (!response.success) {
-                throw new Error(response.error);
-            }
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: this.getHeaders(),
+                next: { revalidate: 60 } // ISR: revalidate every 60 seconds
+            });
 
-            if (!response.data) {
-                throw new Error('Failed to update category');
-            }
+            return this.handleResponse<CategoriesModels[]>(response);
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+            throw error;
+        }
+    }
 
-            return response.data;
+    // Get only active categories
+    async getActiveCategories(): Promise<CategoriesModels[]> {
+        try {
+            const response = await fetch(`${this.baseUrl}/active`, {
+                method: 'GET',
+                headers: this.getHeaders(),
+                next: { revalidate: 60 }
+            });
+
+            return this.handleResponse<CategoriesModels[]>(response);
+        } catch (error) {
+            console.error('Error fetching active categories:', error);
+            throw error;
+        }
+    }
+
+    // Get single category by ID
+    async getCategoryById(id: number): Promise<CategoriesModels> {
+        try {
+            const response = await fetch(`${this.baseUrl}/${id}`, {
+                method: 'GET',
+                headers: this.getHeaders(),
+                cache: 'no-store' // SSR: always fetch fresh data
+            });
+
+            return this.handleResponse<CategoriesModels>(response);
+        } catch (error) {
+            console.error(`Error fetching category ${id}:`, error);
+            throw error;
+        }
+    }
+
+    // Search categories by name
+    async searchCategories(params: SearchParams): Promise<CategoriesModels[]> {
+        try {
+            const queryParams = new URLSearchParams({
+                name: params.name,
+                ...(params.active !== undefined && { active: params.active.toString() })
+            });
+
+            const response = await fetch(`${this.baseUrl}/search?${queryParams}`, {
+                method: 'GET',
+                headers: this.getHeaders(),
+            });
+
+            return this.handleResponse<CategoriesModels[]>(response);
+        } catch (error) {
+            console.error('Error searching categories:', error);
+            throw error;
+        }
+    }
+
+    // Get category statistics
+    async getCategoryStats(): Promise<CategoryStats> {
+        try {
+            const response = await fetch(`${this.baseUrl}/stats`, {
+                method: 'GET',
+                headers: this.getHeaders(),
+            });
+
+            return this.handleResponse<CategoryStats>(response);
+        } catch (error) {
+            console.error('Error fetching category stats:', error);
+            throw error;
+        }
+    }
+
+    // Update category
+    async updateCategory(id: number, data: UpdateCategoryDto): Promise<CategoriesModels> {
+        try {
+            const response = await fetch(`${this.baseUrl}/${id}`, {
+                method: 'PATCH',
+                headers: this.getHeaders(),
+                body: JSON.stringify(data),
+            });
+
+            return this.handleResponse<CategoriesModels>(response);
         } catch (error) {
             console.error(`Error updating category ${id}:`, error);
             throw error;
         }
     }
 
-    // DELETE /categories/:id - Delete category
+    // Delete category permanently
     async deleteCategory(id: number): Promise<void> {
         try {
-            const response = await apiClient.delete<{ message?: string }>(`${this.baseUrl}/${id}`);
+            const response = await fetch(`${this.baseUrl}/${id}`, {
+                method: 'DELETE',
+                headers: this.getHeaders(),
+            });
 
-            if (!response.success) {
-                throw new Error(response.error);
-            }
-
-            // 204 No Content response is handled by apiClient
-            return;
+            await this.handleResponse<void>(response);
         } catch (error) {
             console.error(`Error deleting category ${id}:`, error);
             throw error;
         }
     }
 
-    // PATCH /categories/bulk/status - Bulk update status
-    async bulkUpdateStatus(data: BulkUpdateDto): Promise<void> {
+    // Soft delete category
+    async softDeleteCategory(id: number): Promise<void> {
         try {
-            const response = await apiClient.patch<{ message?: string }>(`${this.baseUrl}/bulk/status`, data);
+            const response = await fetch(`${this.baseUrl}/${id}/soft`, {
+                method: 'DELETE',
+                headers: this.getHeaders(),
+            });
 
-            if (!response.success) {
-                throw new Error(response.error);
-            }
-
-            return;
+            await this.handleResponse<void>(response);
         } catch (error) {
-            console.error('Error bulk updating status:', error);
+            console.error(`Error soft deleting category ${id}:`, error);
             throw error;
         }
     }
 
-    // Helper method to build category tree
-    buildCategoryTree(categories: CategoriesEntity[], parentId: number | null = null): CategoriesEntity[] {
-        const tree: CategoriesEntity[] = [];
-
-        for (const category of categories) {
-            if (category.parent_category_id === parentId) {
-                const children = this.buildCategoryTree(categories, category.category_id);
-                if (children.length) {
-                    category.children = children;
-                }
-                tree.push(category);
-            }
-        }
-
-        return tree;
-    }
-
-    // Helper method to get all subcategory IDs recursively
-    async getAllSubcategoryIds(categoryId: number): Promise<number[]> {
+    // Restore soft-deleted category
+    async restoreCategory(id: number): Promise<CategoriesModels> {
         try {
-            const subcategories = await this.getSubcategories(categoryId);
-            let ids: number[] = subcategories.map(sub => sub.category_id);
+            const response = await fetch(`${this.baseUrl}/${id}/restore`, {
+                method: 'PATCH',
+                headers: this.getHeaders(),
+            });
 
-            for (const sub of subcategories) {
-                const childIds = await this.getAllSubcategoryIds(sub.category_id);
-                ids = [...ids, ...childIds];
-            }
-
-            return ids;
+            return this.handleResponse<CategoriesModels>(response);
         } catch (error) {
-            console.error(`Error getting subcategory IDs for ${categoryId}:`, error);
+            console.error(`Error restoring category ${id}:`, error);
             throw error;
         }
-    }
-
-    // Helper method to generate breadcrumb
-    async getBreadcrumb(categoryId: number): Promise<CategoryPath[]> {
-        try {
-            const path = await this.getCategoryPath(categoryId);
-            return path.map((cat, index) => ({
-                category_id: cat.category_id,
-                category_name: cat.category_name,
-                level: index
-            }));
-        } catch (error) {
-            console.error(`Error generating breadcrumb for ${categoryId}:`, error);
-            throw error;
-        }
-    }
-
-    // Additional helper: Get category tree directly from API
-    async getCategoryTree(): Promise<CategoriesEntity[]> {
-        try {
-            const categories = await this.getAllCategories(true);
-            return categories;
-        } catch (error) {
-            console.error('Error fetching category tree:', error);
-            throw error;
-        }
-    }
-
-    // Additional helper: Toggle category status
-    async toggleCategoryStatus(id: number, currentStatus: boolean): Promise<CategoriesEntity> {
-        return this.updateCategory(id, { is_active: !currentStatus });
-    }
-
-    // Additional helper: Move category to another parent
-    async moveCategory(categoryId: number, newParentId: number | null): Promise<CategoriesEntity> {
-        return this.updateCategory(categoryId, { parent_category_id: newParentId });
     }
 }
 
-// Export singleton instance
 export const categoryService = new CategoryService();

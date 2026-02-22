@@ -1,13 +1,9 @@
-import { IsString, IsOptional, IsBoolean, IsNumber, IsUrl, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsUrl, MaxLength } from 'class-validator';
 
 export class CreateCategoryDto {
     @IsString()
     @MaxLength(150)
     category_name!: string;
-
-    @IsOptional()
-    @IsNumber()
-    parent_category_id?: number;
 
     @IsString()
     @IsUrl()

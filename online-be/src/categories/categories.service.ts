@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+// src/categories/categories.service.ts
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { CategoriesEntity } from '../entity/categories.entity';
 import { CreateCategoryDto } from './dto/create-categories.dto';
 import { UpdateCategoryDto } from './dto/categories-update.dto';
-import { CategoryResponseDto } from './dto/categories-response.dto';
 
 @Injectable()
 export class CategoriesService {
@@ -13,175 +13,89 @@ export class CategoriesService {
         private categoriesRepository: Repository<CategoriesEntity>,
     ) { }
 
-    async create(createCategoryDto: CreateCategoryDto): Promise<CategoryResponseDto> {
-        if (createCategoryDto.parent_category_id) {
-            const parentExists = await this.categoriesRepository.findOne({
-                where: { category_id: createCategoryDto.parent_category_id }
-            });
+    async create(createCategoryDto: CreateCategoryDto): Promise<CategoriesEntity> {
+        const category = this.categoriesRepository.create(createCategoryDto);
+        return await this.categoriesRepository.save(category);
+    }
 
-            if (!parentExists) {
-                throw new BadRequestException('Parent category not found');
+    async findAll(): Promise<CategoriesEntity[]> {
+        return await this.categoriesRepository.find({
+            order: {
+                createdAt: 'DESC'
             }
-        }
-
-        const category = this.categoriesRepository.create({
-            category_name: createCategoryDto.category_name,
-            parent_category_id: createCategoryDto.parent_category_id,
-            category_image: createCategoryDto.category_image,
-            is_active: createCategoryDto.is_active ?? true,
         });
-
-        const savedCategory = await this.categoriesRepository.save(category);
-        return new CategoryResponseDto(savedCategory);
     }
 
-    async findAll(): Promise<CategoryResponseDto[]> {
-        const categories = await this.categoriesRepository.find({
-            relations: ['children'],
+    async findActive(): Promise<CategoriesEntity[]> {
+        return await this.categoriesRepository.find({
+            where: { is_active: true },
+            order: {
+                createdAt: 'DESC'
+            }
         });
-
-        return categories.map(category => new CategoryResponseDto(category));
     }
 
-    async findAllWithHierarchy(): Promise<CategoryResponseDto[]> {
-        const categories = await this.categoriesRepository.find({
-            relations: ['children', 'children.children'],
-        });
-
-        const rootCategories = categories.filter(cat => !cat.parent_category_id);
-
-        return rootCategories.map(category => new CategoryResponseDto(category));
-    }
-
-    async findOne(id: number): Promise<CategoryResponseDto> {
+    async findOne(id: number): Promise<CategoriesEntity> {
         const category = await this.categoriesRepository.findOne({
-            where: { category_id: id },
-            relations: ['parent', 'children'],
+            where: { category_id: id }
         });
 
         if (!category) {
             throw new NotFoundException(`Category with ID ${id} not found`);
         }
 
-        return new CategoryResponseDto(category);
+        return category;
     }
 
-    async update(id: number, updateCategoryDto: UpdateCategoryDto): Promise<CategoryResponseDto> {
-        await this.findOne(id);
+    async update(id: number, updateCategoryDto: UpdateCategoryDto): Promise<CategoriesEntity> {
+        const category = await this.findOne(id);
 
-        // Prevent circular reference
-        if (updateCategoryDto.parent_category_id) {
-            // Check if trying to set self as parent
-            if (updateCategoryDto.parent_category_id === id) {
-                throw new BadRequestException('Category cannot be its own parent');
-            }
+        // Merge the update data into the existing category
+        Object.assign(category, updateCategoryDto);
 
-            // Check if new parent exists
-            const parentExists = await this.categoriesRepository.findOne({
-                where: { category_id: updateCategoryDto.parent_category_id }
-            });
-
-            if (!parentExists) {
-                throw new BadRequestException('Parent category not found');
-            }
-
-            // Check for circular reference (if new parent is a descendant of current category)
-            const isDescendant = await this.isDescendant(id, updateCategoryDto.parent_category_id);
-            if (isDescendant) {
-                throw new BadRequestException('Cannot set a descendant as parent (circular reference)');
-            }
-        }
-
-        await this.categoriesRepository.update(id, {
-            category_name: updateCategoryDto.category_name,
-            parent_category_id: updateCategoryDto.parent_category_id,
-            category_image: updateCategoryDto.category_image,
-            is_active: updateCategoryDto.is_active,
-        });
-
-        const updatedCategory = await this.findOne(id);
-        return updatedCategory;
-    }
-
-    // Helper method to check if a category is a descendant of another
-    private async isDescendant(categoryId: number, potentialDescendantId: number): Promise<boolean> {
-        if (categoryId === potentialDescendantId) {
-            return true;
-        }
-
-        const children = await this.categoriesRepository.find({
-            where: { parent_category_id: categoryId }
-        });
-
-        for (const child of children) {
-            if (await this.isDescendant(child.category_id, potentialDescendantId)) {
-                return true;
-            }
-        }
-
-        return false;
+        return await this.categoriesRepository.save(category);
     }
 
     async remove(id: number): Promise<void> {
-        // Check if category exists
-        await this.findOne(id);
+        const category = await this.findOne(id);
+        await this.categoriesRepository.remove(category);
+    }
 
-        // Check if category has children
-        const hasChildren = await this.categoriesRepository.count({
-            where: { parent_category_id: id }
+    async softDelete(id: number): Promise<void> {
+        // Soft delete by setting is_active to false
+        const category = await this.findOne(id);
+        category.is_active = false;
+        await this.categoriesRepository.save(category);
+    }
+
+    async restore(id: number): Promise<void> {
+        // Restore soft deleted category
+        const category = await this.categoriesRepository.findOne({
+            where: { category_id: id }
         });
 
-        if (hasChildren > 0) {
-            throw new BadRequestException('Cannot delete category with subcategories');
+        if (!category) {
+            throw new NotFoundException(`Category with ID ${id} not found`);
         }
 
-        await this.categoriesRepository.delete(id);
+        category.is_active = true;
+        await this.categoriesRepository.save(category);
     }
 
-    async findActive(): Promise<CategoryResponseDto[]> {
-        const categories = await this.categoriesRepository.find({
-            where: { is_active: true },
-            relations: ['children'],
+    async findByName(name: string): Promise<CategoriesEntity[]> {
+        return await this.categoriesRepository
+            .createQueryBuilder('category')
+            .where('category.category_name ILIKE :name', { name: `%${name}%` })
+            .getMany();
+    }
+
+    async countCategories(): Promise<number> {
+        return await this.categoriesRepository.count();
+    }
+
+    async countActiveCategories(): Promise<number> {
+        return await this.categoriesRepository.count({
+            where: { is_active: true }
         });
-
-        return categories.map(category => new CategoryResponseDto(category));
-    }
-
-    async findSubcategories(id: number): Promise<CategoryResponseDto[]> {
-        // Check if category exists
-        await this.findOne(id);
-
-        const subcategories = await this.categoriesRepository.find({
-            where: { parent_category_id: id },
-        });
-
-        return subcategories.map(sub => new CategoryResponseDto(sub));
-    }
-
-    // Additional useful methods
-    async findPathToRoot(id: number): Promise<CategoriesEntity[]> {
-        const path: CategoriesEntity[] = [];
-        let currentId = id;
-
-        while (currentId) {
-            const category = await this.categoriesRepository.findOne({
-                where: { category_id: currentId },
-                relations: ['parent']
-            });
-
-            if (!category) break;
-
-            path.unshift(category);
-            currentId = category.parent_category_id;
-        }
-
-        return path;
-    }
-
-    async bulkUpdateStatus(ids: number[], isActive: boolean): Promise<void> {
-        await this.categoriesRepository.update(
-            { category_id: In(ids) },
-            { is_active: isActive }
-        );
     }
 }

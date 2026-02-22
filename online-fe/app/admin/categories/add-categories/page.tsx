@@ -7,55 +7,26 @@ import {
     ArrowLeft,
     Save,
     Folder,
-    ChevronRight,
-    ChevronDown,
     Image as ImageIcon,
     Loader2,
     X
 } from 'lucide-react'
 import CMSLayout from '@/components/Layout/AdminCMSLayout'
 import { categoryService } from '@/services/categories/categories.service'
-import { CategoriesEntity } from '@/models/categories.model'
 
 export default function AddCategoryPage() {
     const router = useRouter();
 
     // Form state
     const [categoryName, setCategoryName] = useState('');
-    const [parentCategoryId, setParentCategoryId] = useState<string>('');
     const [categoryImage, setCategoryImage] = useState('');
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [isActive, setIsActive] = useState(true);
-
-    // Data state
-    const [categories, setCategories] = useState<CategoriesEntity[]>([]);
-    const [loadingCategories, setLoadingCategories] = useState(true);
 
     // UI state
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-
-    // Expanded categories for tree view
-    const [expandedCats, setExpandedCats] = useState<number[]>([]);
-
-    // Fetch categories on mount
-    useEffect(() => {
-        fetchCategories();
-    }, []);
-
-    const fetchCategories = async () => {
-        try {
-            setLoadingCategories(true);
-            const data = await categoryService.getAllCategories(true);
-            setCategories(data);
-        } catch (error) {
-            console.error('Error fetching categories:', error);
-            setError('Failed to load categories. Please refresh the page.');
-        } finally {
-            setLoadingCategories(false);
-        }
-    };
 
     // Handle image URL change
     const handleImageUrlChange = (url: string) => {
@@ -65,90 +36,6 @@ export default function AddCategoryPage() {
         } else {
             setImagePreview(null);
         }
-    };
-
-    const toggleCategory = (id: number) => {
-        if (expandedCats.includes(id)) {
-            setExpandedCats(expandedCats.filter(catId => catId !== id));
-        } else {
-            setExpandedCats([...expandedCats, id]);
-        }
-    };
-
-    // Recursive function to render category tree
-    const renderCategoryOptions = (categories: CategoriesEntity[], level = 0) => {
-        return categories.map((cat) => (
-            <div key={cat.category_id}>
-                <div
-                    className={`flex items-center py-2 px-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors ${parentCategoryId === cat.category_id.toString() ? 'bg-blue-50 border-l-4 border-accent' : ''
-                        }`}
-                    style={{ marginLeft: `${level * 24}px` }}
-                >
-                    {cat.children && cat.children.length > 0 ? (
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                toggleCategory(cat.category_id);
-                            }}
-                            className="p-1 hover:bg-gray-200 rounded-md mr-2 transition-colors"
-                        >
-                            {expandedCats.includes(cat.category_id) ? (
-                                <ChevronDown size={16} className="text-gray-500" />
-                            ) : (
-                                <ChevronRight size={16} className="text-gray-500" />
-                            )}
-                        </button>
-                    ) : (
-                        <span className="w-6 mr-2" />
-                    )}
-
-                    <input
-                        type="radio"
-                        name="parentCategory"
-                        id={`cat-${cat.category_id}`}
-                        value={cat.category_id}
-                        checked={parentCategoryId === cat.category_id.toString()}
-                        onChange={(e) => setParentCategoryId(e.target.value)}
-                        className="mr-3 w-4 h-4 text-accent focus:ring-accent"
-                    />
-
-                    {cat.category_image ? (
-                        <div className="w-6 h-6 rounded-md overflow-hidden mr-2 bg-gray-100">
-                            <img
-                                src={cat.category_image}
-                                alt={cat.category_name}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                    (e.target as HTMLImageElement).src = '/placeholder-category.png';
-                                }}
-                            />
-                        </div>
-                    ) : (
-                        <Folder size={18} className="text-yellow-500 mr-2 flex-shrink-0" />
-                    )}
-
-                    <label
-                        htmlFor={`cat-${cat.category_id}`}
-                        className="text-sm cursor-pointer flex-1 font-medium"
-                    >
-                        {cat.category_name}
-                    </label>
-
-                    {!cat.is_active && (
-                        <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                            Inactive
-                        </span>
-                    )}
-                </div>
-
-                {expandedCats.includes(cat.category_id) && cat.children && cat.children.length > 0 && (
-                    <div className="ml-4">
-                        {renderCategoryOptions(cat.children, level + 1)}
-                    </div>
-                )}
-            </div>
-        ));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -172,9 +59,8 @@ export default function AddCategoryPage() {
         setIsSubmitting(true);
 
         try {
-            const response = await categoryService.createCategory({
+            await categoryService.createCategory({
                 category_name: categoryName.trim(),
-                parent_category_id: parentCategoryId ? parseInt(parentCategoryId) : null,
                 category_image: categoryImage.trim() || 'https://via.placeholder.com/150',
                 is_active: isActive,
             });
@@ -184,7 +70,7 @@ export default function AddCategoryPage() {
             // Redirect after 2 seconds
             setTimeout(() => {
                 router.push('/admin/categories');
-                router.refresh(); // Refresh server components
+                router.refresh();
             }, 2000);
 
         } catch (error: any) {
@@ -241,7 +127,7 @@ export default function AddCategoryPage() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                         {/* Basic Information */}
-                        <div className="p-6 border-b border-gray-200">
+                        <div className="p-6">
                             <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
 
                             {/* Category Name */}
@@ -297,53 +183,8 @@ export default function AddCategoryPage() {
                             </div>
                         </div>
 
-                        {/* Parent Category */}
-                        <div className="p-6 border-b border-gray-200">
-                            <h2 className="text-lg font-semibold text-gray-900 mb-4">Parent Category</h2>
-
-                            <div className="mb-4">
-                                <label className="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 rounded-lg">
-                                    <input
-                                        type="radio"
-                                        name="parentCategory"
-                                        value=""
-                                        checked={parentCategoryId === ''}
-                                        onChange={(e) => setParentCategoryId(e.target.value)}
-                                        className="w-4 h-4 text-accent focus:ring-accent"
-                                    />
-                                    <div>
-                                        <span className="text-sm font-medium">None (Top Level)</span>
-                                        <p className="text-xs text-gray-500">Make this a main category</p>
-                                    </div>
-                                </label>
-                            </div>
-
-                            <div className="border border-gray-200 rounded-xl bg-gray-50">
-                                <div className="p-3 bg-gray-100 border-b border-gray-200 rounded-t-xl">
-                                    <span className="text-sm font-medium text-gray-700">
-                                        Category Hierarchy
-                                    </span>
-                                </div>
-                                <div className="max-h-80 overflow-y-auto p-3">
-                                    {loadingCategories ? (
-                                        <div className="flex items-center justify-center py-8">
-                                            <Loader2 size={24} className="animate-spin text-accent" />
-                                            <span className="ml-2 text-sm text-gray-500">Loading categories...</span>
-                                        </div>
-                                    ) : categories.length > 0 ? (
-                                        renderCategoryOptions(categories)
-                                    ) : (
-                                        <div className="text-center py-8 text-gray-500">
-                                            <Folder size={32} className="mx-auto mb-2 text-gray-400" />
-                                            <p className="text-sm">No categories found</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
                         {/* Category Image */}
-                        <div className="p-6">
+                        <div className="p-6 border-t border-gray-200">
                             <h2 className="text-lg font-semibold text-gray-900 mb-4">Category Image</h2>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
