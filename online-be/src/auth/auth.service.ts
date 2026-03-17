@@ -3,28 +3,28 @@ import {
   UnauthorizedException,
   ConflictException,
   BadRequestException,
-} from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
-import { UsersService } from '../users/users.service';
-import { UserRole } from '../entity/users.entity';
-import { SetupFirstAdminDto } from './dto/admin/setup-admin.dto';
+} from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import * as bcrypt from "bcrypt";
+import { UsersService } from "../users/users.service";
+import { UserRole } from "../entities/users.entities";
+import { SetupFirstAdminDto } from "./dto/admin/setup-admin.dto";
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   async register(name: string, email: string, password: string) {
     const existingUser = await this.usersService.findByEmail(email);
     if (existingUser) {
-      throw new ConflictException('Email already registered');
+      throw new ConflictException("Email already registered");
     }
 
     if (password.length < 6) {
-      throw new BadRequestException('Password must be at least 6 characters');
+      throw new BadRequestException("Password must be at least 6 characters");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -32,7 +32,7 @@ export class AuthService {
     const user = await this.usersService.create({
       name,
       email,
-      phone: '',
+      phone: "",
       password: hashedPassword,
       role: UserRole.USER,
     });
@@ -51,13 +51,13 @@ export class AuthService {
     const user = await this.usersService.findByEmail(email);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     const payload = {
@@ -69,13 +69,13 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: '1h',
-      secret: process.env.JWT_SECRET || 'your-secret-key',
+      expiresIn: "1h",
+      secret: process.env.JWT_SECRET || "your-secret-key",
     });
 
     return {
       access_token: accessToken,
-      token_type: 'Bearer',
+      token_type: "Bearer",
       expires_in: 3600,
       user: {
         id: user.id,
@@ -92,17 +92,17 @@ export class AuthService {
     const user = await this.usersService.findByEmail(email);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     if (user.role !== UserRole.ADMIN) {
-      throw new UnauthorizedException('Admin access required');
+      throw new UnauthorizedException("Admin access required");
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     const payload = {
@@ -114,13 +114,13 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: '24h',
-      secret: process.env.JWT_SECRET || 'your-secret-key',
+      expiresIn: "24h",
+      secret: process.env.JWT_SECRET || "your-secret-key",
     });
 
     return {
       access_token: accessToken,
-      token_type: 'Bearer',
+      token_type: "Bearer",
       expires_in: 86400,
       user: {
         id: user.id,
@@ -132,34 +132,32 @@ export class AuthService {
     };
   }
 
-// In your AuthService
-async setupFirstAdmin(setupFirstAdminDto: SetupFirstAdminDto) {
-  const { email, password, name, phone } = setupFirstAdminDto;
+  async setupFirstAdmin(setupFirstAdminDto: SetupFirstAdminDto) {
+    const { email, password, name, phone } = setupFirstAdminDto;
 
-  const adminCount = await this.usersService.countAdmins();
+    const adminCount = await this.usersService.countAdmins();
 
-  if (adminCount > 0) {
-    throw new ConflictException('Initial admin already exists');
+    if (adminCount > 0) {
+      throw new ConflictException("Initial admin already exists");
+    }
+
+    const existingUser = await this.usersService.findByEmail(email);
+    if (existingUser) {
+      throw new ConflictException("Email already registered");
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newAdmin = await this.usersService.create({
+      email: email.toLowerCase().trim(),
+      password: hashedPassword,
+      name: name?.trim() || "System Administrator",
+      phone: phone || "",
+      role: UserRole.ADMIN,
+      isSuperAdmin: true,
+    });
+
+    const { password: result } = newAdmin;
+    return result;
   }
-
-  // Check if email already exists
-  const existingUser = await this.usersService.findByEmail(email);
-  if (existingUser) {
-    throw new ConflictException('Email already registered');
-  }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  const newAdmin = await this.usersService.create({
-    email: email.toLowerCase().trim(),
-    password: hashedPassword,
-    name: name?.trim() || 'System Administrator',
-    phone: phone || '',
-    role: UserRole.ADMIN,
-    isSuperAdmin: true, // You might want to add this flag
-  });
-
-  const { password: result } = newAdmin;
-  return result;
-}
 }

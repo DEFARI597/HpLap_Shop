@@ -24,6 +24,14 @@ const nextConfig: NextConfig = {
         destination: '/admin/categories/add-categories'
       },
       {
+        source: '/admin/product',
+        destination: '/admin/product'
+      },
+      {
+        source: '/admin/product/add-product',
+        destination: '/admin/product/add-product'
+      },
+      {
         source: '/register',
         destination: '/users/register',
       },

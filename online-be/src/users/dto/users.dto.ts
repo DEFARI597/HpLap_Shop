@@ -1,4 +1,4 @@
-import { UserRole } from "../../entity/users.entity";
+import { UserRole } from "../../entities/users.entities";
 
 interface UserDto {
   id: string | number;

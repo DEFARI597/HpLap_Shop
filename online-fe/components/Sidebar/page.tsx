@@ -7,6 +7,7 @@ import { Icons } from '@/lib/icons'
 
 const navItems = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: Icons.Home },
+    { name: 'Product', href: '/admin/product', icon: Icons.PackageSearch},
     { name: 'Categories', href: '/admin/categories', icon: Icons.Folder },
     { name: 'Users', href: '/admin/users', icon: Icons.Users }
 ]
