@@ -30,8 +30,7 @@
 ```bash
 $ npm install
 $ cp .env.example .env
-$ npm run migration:run
-$ npm run start:dev 
+$ docker compose up -d --build 
 # One-time command to create first admin
 curl -X POST http://localhost:8000/auth/setup-first-admin \
   -H "Content-Type: application/json" \

@@ -5,7 +5,7 @@ import {
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Like, Repository, MoreThanOrEqual } from "typeorm";
-import { User, UserRole } from "../entity/users.entity";
+import { User, UserRole } from "../entities/users.entities";
 import { AuthService } from "../auth/auth.service";
 import { UpdateRoleDto } from "../admin/dto/update-role.dto";
 import { GetUsersQueryDto, UsersPaginatedDto } from "../users/dto/users.dto";
@@ -41,68 +41,70 @@ export class AdminService {
     };
   }
 
-    async getAllUsers(query: GetUsersQueryDto): Promise<UsersPaginatedDto> {
-      const {
-        page,
-        limit,
-        search,
-        role,
-        sortBy = "createdAt",
-        sortOrder = "DESC",
-      } = query;
+  async getAllUsers(query: GetUsersQueryDto): Promise<UsersPaginatedDto> {
+    const {
+      page,
+      limit,
+      search,
+      role,
+      sortBy = "createdAt",
+      sortOrder = "DESC",
+    } = query;
 
-      const skip = page !== undefined && limit !== undefined
+    const skip =
+      page !== undefined && limit !== undefined
         ? (page - 1) * limit
         : undefined;
 
-      const where: any = {};
+    const where: any = {};
 
-      if (search) {
-        where.name = Like(`%${search}%`);
-      }
-
-      if (role) {
-        where.role = role;
-      }
-
-      const queryOptions: any = {
-        select: ["id", "email", "name", "role", "createdAt"],
-        where,
-        order: { [sortBy]: sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC" },
-      };
-
-      if (skip !== undefined && limit !== undefined) {
-        queryOptions.skip = skip;
-        queryOptions.take = limit;
-      }
-
-      const [users, total] = await this.usersRepository.findAndCount(queryOptions);
-
-      const meta: any = {
-        total,
-      };
-
-      if (page !== undefined) {
-        meta.page = page;
-      }
-
-      if (limit !== undefined) {
-        meta.limit = limit;
-      }
-
-      if (page !== undefined && limit !== undefined) {
-        meta.totalPages = Math.ceil(total / limit);
-      }
-
-      return {
-        data: users.map((user) => ({
-          ...user,
-          id: user.id,
-          createdAt: user.createdAt.toISOString(),
-        })),
-        meta,
-      };
+    if (search) {
+      where.name = Like(`%${search}%`);
     }
+
+    if (role) {
+      where.role = role;
+    }
+
+    const queryOptions: any = {
+      select: ["id", "email", "name", "role", "createdAt"],
+      where,
+      order: { [sortBy]: sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC" },
+    };
+
+    if (skip !== undefined && limit !== undefined) {
+      queryOptions.skip = skip;
+      queryOptions.take = limit;
+    }
+
+    const [users, total] =
+      await this.usersRepository.findAndCount(queryOptions);
+
+    const meta: any = {
+      total,
+    };
+
+    if (page !== undefined) {
+      meta.page = page;
+    }
+
+    if (limit !== undefined) {
+      meta.limit = limit;
+    }
+
+    if (page !== undefined && limit !== undefined) {
+      meta.totalPages = Math.ceil(total / limit);
+    }
+
+    return {
+      data: users.map((user) => ({
+        ...user,
+        id: user.id,
+        createdAt: user.createdAt.toISOString(),
+      })),
+      meta,
+    };
+  }
 
   async updateUserRole(userId: number, updateRoleDto: UpdateRoleDto) {
     const user = await this.usersRepository.findOne({

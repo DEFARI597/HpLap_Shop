@@ -2,10 +2,10 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User, UserRole } from '../entity/users.entity';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { User, UserRole } from "../entities/users.entities";
 
 @Injectable()
 export class UsersService {
@@ -22,11 +22,11 @@ export class UsersService {
   async findOne(id: number): Promise<User> {
     const user = await this.repo.findOne({
       where: { id },
-      select: ['id', 'name', 'email', 'role', 'createdAt', 'updatedAt'],
+      select: ["id", "name", "email", "role", "createdAt", "updatedAt"],
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
 
     return user;
@@ -47,23 +47,23 @@ export class UsersService {
     const result = await this.repo.delete(id);
 
     if (!result.affected) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
 
-    return { message: 'User deleted' };
+    return { message: "User deleted" };
   }
 
   async updateRole(id: number, role: UserRole): Promise<User> {
     if (!Object.values(UserRole).includes(role)) {
       throw new BadRequestException(
-        `Invalid role. Allowed roles: ${Object.values(UserRole).join(', ')}`,
+        `Invalid role. Allowed roles: ${Object.values(UserRole).join(", ")}`,
       );
     }
 
     const user = await this.repo.findOne({ where: { id } });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
     user.role = role;
     return this.repo.save(user);
@@ -80,21 +80,21 @@ export class UsersService {
   async findAdmins(): Promise<User[]> {
     return this.repo.find({
       where: { role: UserRole.ADMIN },
-      select: ['id', 'name', 'email', 'role', 'createdAt'],
+      select: ["id", "name", "email", "role", "createdAt"],
     });
   }
 
   async findRegularUsers(): Promise<User[]> {
     return this.repo.find({
       where: { role: UserRole.USER },
-      select: ['id', 'name', 'email', 'role', 'createdAt'],
+      select: ["id", "name", "email", "role", "createdAt"],
     });
   }
 
   async isAdmin(id: number): Promise<boolean> {
     const user = await this.repo.findOne({
       where: { id },
-      select: ['role'],
+      select: ["role"],
     });
 
     return user?.role === UserRole.ADMIN;
