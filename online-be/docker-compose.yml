@@ -1,0 +1,51 @@
+services:
+  app:
+    build: .
+    container_name: hplap_app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_USER: ${DB_USER:-appuser}
+      DB_PASSWORD: ${DB_PASSWORD:-appuser}
+      DB_NAME: ${DB_NAME:-hplap_db}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "
+      echo 'waiting for db...';
+      until nc -z db 3306; do
+        sleep 2;
+      done;
+      echo 'db ready, wait extra...';
+      sleep 5;
+      echo 'running migration...';
+      npm run migration:run || echo 'migration failed';
+      echo 'starting app...';
+      npm run start:dev
+      "
+
+  db:
+    image: mysql:8.0.36
+    container_name: mysql-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootuser}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-hplap_db}
+      MYSQL_USER: ${MYSQL_USER:-appuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-appuser}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
