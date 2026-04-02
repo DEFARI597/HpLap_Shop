@@ -115,9 +115,16 @@ class ApiClient {
         return this.request<T>(endpoint, { method: 'DELETE' });
     }
 
-    async upload<T>(endpoint: string, file: File, fieldName = 'file'): Promise<ApiResponse<T>> {
+    async upload<T>(endpoint: string, file: File,fields?: Record<string, string>,fieldName = 'file'): Promise<ApiResponse<T>> {
         const formData = new FormData();
         formData.append(fieldName, file);
+
+        if (fields) {
+        Object.entries(fields).forEach(([key, value]) => {
+            formData.append(key, value);
+        });
+        }
+        
 
         const token = this.getToken();
         const headers: Record<string, string> = {};

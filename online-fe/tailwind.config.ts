@@ -5,17 +5,16 @@ const config: Config = {
     content: [
         './app/**/*.{js,ts,jsx,tsx,mdx}',
         './components/**/*.{js,ts,jsx,tsx,mdx}',
+        './styles/**/*.{css}',
     ],
     theme: {
         extend: {
             colors: {
-                // Core colors
                 primary: '#111827',
                 secondary: '#6B7280',
                 background: '#F9FAFB',
                 accent: '#3B82F6',
 
-                // Semantic colors
                 success: '#10B981',
                 warning: '#F59E0B',
                 danger: '#EF4444',

@@ -8,9 +8,6 @@ export class CategoryResponseDto {
     category_name!: string;
 
     @Expose()
-    parent_category_id!: number;
-
-    @Expose()
     category_image!: string;
 
     @Expose()
@@ -21,12 +18,6 @@ export class CategoryResponseDto {
 
     @Expose()
     updatedAt!: Date;
-
-    @Expose()
-    children?: CategoryResponseDto[];
-
-    @Exclude()
-    parent?: CategoryResponseDto;
 
     constructor(partial: Partial<CategoryResponseDto>) {
         Object.assign(this, partial);

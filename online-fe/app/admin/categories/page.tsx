@@ -2,24 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Search, Plus, Edit, Trash2, Eye, Folder, Loader2, ChevronDown, ChevronRight } from 'lucide-react'
+import { Search, Plus, Edit, Folder, Loader2 } from 'lucide-react'
 import CMSLayout from '@/components/Layout/AdminCMSLayout'
 import { categoryService } from '@/services/categories/categories.service'
-import { CategoriesEntity } from '@/models/categories.model'
+import { CategoriesModels } from '@/models/categories.model'
 
 export default function CategoriesPage() {
-    const router = useRouter();
     const [search, setSearch] = useState('')
     const [selectedCategories, setSelectedCategories] = useState<number[]>([])
-    const [categories, setCategories] = useState<CategoriesEntity[]>([])
+    const [categories, setCategories] = useState<CategoriesModels[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
     const [actionLoading, setActionLoading] = useState<number | null>(null)
-    const [expandedCategories, setExpandedCategories] = useState<number[]>([])
-    const [showHierarchy, setShowHierarchy] = useState(true)
 
-    // Fetch categories on mount
+
     useEffect(() => {
         fetchCategories()
     }, [])
@@ -28,7 +24,7 @@ export default function CategoriesPage() {
         try {
             setLoading(true)
             setError('')
-            const data = await categoryService.getAllCategories(showHierarchy)
+            const data = await categoryService.getAllCategories()
             setCategories(data)
         } catch (err: any) {
             setError(err.message || 'Failed to load categories')
@@ -64,24 +60,16 @@ export default function CategoriesPage() {
         }
     }
 
-    // Toggle category expansion in tree view
-    const toggleExpand = (id: number, e: React.MouseEvent) => {
-        e.stopPropagation()
-        setExpandedCategories(prev =>
-            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-        )
-    }
-
-    // Delete category
+    // Delete category permanently
     const deleteCategory = async (id: number) => {
-        if (!confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
+        if (!confirm('Are you sure you want to permanently delete this category? This action cannot be undone.')) {
             return
         }
 
         try {
             setActionLoading(id)
             await categoryService.deleteCategory(id)
-            await fetchCategories() // Refresh list
+            await fetchCategories()
             setSelectedCategories(prev => prev.filter(i => i !== id))
         } catch (err: any) {
             alert(err.message || 'Failed to delete category')
@@ -90,17 +78,47 @@ export default function CategoriesPage() {
         }
     }
 
-    // Bulk delete
-    const deleteSelected = async () => {
-        if (selectedCategories.length === 0) return
-
-        if (!confirm(`Are you sure you want to delete ${selectedCategories.length} categories?`)) {
+    // Soft delete category
+    const softDeleteCategory = async (id: number) => {
+        if (!confirm('Are you sure you want to move this category to trash?')) {
             return
         }
 
         try {
-            setActionLoading(-1) // Special loading state for bulk
-            // Delete one by one since bulk delete might not be implemented
+            setActionLoading(id)
+            await categoryService.softDeleteCategory(id)
+            await fetchCategories()
+            setSelectedCategories(prev => prev.filter(i => i !== id))
+        } catch (err: any) {
+            alert(err.message || 'Failed to move category to trash')
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
+    // Restore category
+    const restoreCategory = async (id: number) => {
+        try {
+            setActionLoading(id)
+            await categoryService.restoreCategory(id)
+            await fetchCategories()
+        } catch (err: any) {
+            alert(err.message || 'Failed to restore category')
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
+    // Bulk delete permanently
+    const bulkDeletePermanent = async () => {
+        if (selectedCategories.length === 0) return
+
+        if (!confirm(`Are you sure you want to permanently delete ${selectedCategories.length} categories? This action cannot be undone.`)) {
+            return
+        }
+
+        try {
+            setActionLoading(-1)
             for (const id of selectedCategories) {
                 await categoryService.deleteCategory(id)
             }
@@ -113,20 +131,41 @@ export default function CategoriesPage() {
         }
     }
 
-    // Bulk update status
-    const bulkUpdateStatus = async (isActive: boolean) => {
+    // Bulk soft delete
+    const bulkSoftDelete = async () => {
+        if (selectedCategories.length === 0) return
+
+        if (!confirm(`Are you sure you want to move ${selectedCategories.length} categories to trash?`)) {
+            return
+        }
+
+        try {
+            setActionLoading(-1)
+            for (const id of selectedCategories) {
+                await categoryService.softDeleteCategory(id)
+            }
+            await fetchCategories()
+            setSelectedCategories([])
+        } catch (err: any) {
+            alert(err.message || 'Failed to move categories to trash')
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
+    // Bulk restore
+    const bulkRestore = async () => {
         if (selectedCategories.length === 0) return
 
         try {
             setActionLoading(-1)
-            await categoryService.bulkUpdateStatus({
-                ids: selectedCategories,
-                isActive
-            })
+            for (const id of selectedCategories) {
+                await categoryService.restoreCategory(id)
+            }
             await fetchCategories()
             setSelectedCategories([])
         } catch (err: any) {
-            alert(err.message || 'Failed to update categories')
+            alert(err.message || 'Failed to restore categories')
         } finally {
             setActionLoading(null)
         }
@@ -136,7 +175,7 @@ export default function CategoriesPage() {
     const toggleStatus = async (id: number, currentStatus: boolean) => {
         try {
             setActionLoading(id)
-            await categoryService.toggleCategoryStatus(id, currentStatus)
+            await categoryService.updateCategory(id, { is_active: !currentStatus })
             await fetchCategories()
         } catch (err: any) {
             alert(err.message || 'Failed to update category status')
@@ -146,118 +185,28 @@ export default function CategoriesPage() {
     }
 
     // Get stats
-    const stats = {
-        total: categories.length,
-        active: categories.filter(c => c.is_active).length,
-        inactive: categories.filter(c => !c.is_active).length,
-        topLevel: categories.filter(c => !c.parent_category_id).length
+    const getStats = async () => {
+        try {
+            return await categoryService.getCategoryStats()
+        } catch (err) {
+            console.error('Error fetching stats:', err)
+            return { total: categories.length, active: 0 }
+        }
     }
 
-    // Render category row with hierarchy
-    const renderCategoryRow = (category: CategoriesEntity, level = 0) => {
-        const hasChildren = category.children && category.children.length > 0
-        const isExpanded = expandedCategories.includes(category.category_id)
-        const isSelected = selectedCategories.includes(category.category_id)
-        const isLoading = actionLoading === category.category_id
+    const [stats, setStats] = useState({ total: 0, active: 0 })
 
-        return (
-            <tbody key={category.category_id}>
-                <tr className="border-t hover:bg-gray-50">
-                    <td className="p-4" style={{ paddingLeft: `${level * 32 + 16}px` }}>
-                        <div className="flex items-center">
-                            {hasChildren ? (
-                                <button
-                                    onClick={(e) => toggleExpand(category.category_id, e)}
-                                    className="p-1 hover:bg-gray-200 rounded mr-2"
-                                >
-                                    {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                                </button>
-                            ) : (
-                                <span className="w-6 mr-2" />
-                            )}
-                            <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => toggleSelection(category.category_id)}
-                                className="rounded mr-3"
-                                disabled={actionLoading !== null}
-                            />
-                        </div>
-                    </td>
-                    <td className="p-4">
-                        <div className="flex items-center gap-2">
-                            {category.category_image ? (
-                                <img
-                                    src={category.category_image}
-                                    alt={category.category_name}
-                                    className="w-8 h-8 object-cover rounded"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).src = '/placeholder-category.png'
-                                    }}
-                                />
-                            ) : (
-                                <Folder size={20} className="text-yellow-500" />
-                            )}
-                            <div>
-                                <div className="font-medium">{category.category_name}</div>
-                                <div className="text-xs text-gray-500">ID: {category.category_id}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td className="p-4">
-                        <code className="bg-gray-100 px-2 py-1 rounded text-sm">
-                            {category.category_name.toLowerCase().replace(/\s+/g, '-')}
-                        </code>
-                    </td>
-                    <td className="p-4">
-                        {category.children?.length || 0}
-                    </td>
-                    <td className="p-4">
-                        <button
-                            onClick={() => toggleStatus(category.category_id, category.is_active)}
-                            disabled={isLoading}
-                            className={`px-3 py-1 rounded-full text-sm transition-colors ${category.is_active
-                                ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                                }`}
-                        >
-                            {isLoading ? (
-                                <Loader2 size={14} className="animate-spin" />
-                            ) : (
-                                category.is_active ? 'Active' : 'Inactive'
-                            )}
-                        </button>
-                    </td>
-                    <td className="p-4">
-                        <div className="flex gap-2">
-                            <Link
-                                href={`/admin/categories/${category.category_id}`}
-                                className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                title="View Details"
-                            >
-                                <Eye size={16} />
-                            </Link>
-                            <Link
-                                href={`/admin/categories/${category.category_id}/edit`}
-                                className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors"
-                                title="Edit Category"
-                            >
-                                <Edit size={16} />
-                            </Link>
-                            <button
-                                onClick={() => deleteCategory(category.category_id)}
-                                disabled={isLoading}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-                                title="Delete Category"
-                            >
-                                <Trash2 size={16} />
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                {hasChildren && isExpanded && category.children?.map(child => renderCategoryRow(child, level + 1))}
-            </tbody>
-        )
+    useEffect(() => {
+        getStats().then(setStats)
+    }, [categories])
+
+    // Format date
+    const formatDate = (date: Date) => {
+        return new Date(date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        })
     }
 
     if (loading) {
@@ -280,23 +229,15 @@ export default function CategoriesPage() {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Categories</h1>
-                        <p className="text-gray-600 mt-1">Manage your product categories and hierarchy</p>
+                        <p className="text-gray-600 mt-1">Manage your product categories</p>
                     </div>
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => setShowHierarchy(!showHierarchy)}
-                            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
-                        >
-                            {showHierarchy ? 'Flat View' : 'Tree View'}
-                        </button>
-                        <Link
-                            href="/admin/categories/add-categories"
-                            className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm"
-                        >
-                            <Plus size={18} />
-                            Add Category
-                        </Link>
-                    </div>
+                    <Link
+                        href="/admin/categories/add-categories"
+                        className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm"
+                    >
+                        <Plus size={18} />
+                        Add Category
+                    </Link>
                 </div>
 
                 {/* Stats Cards */}
@@ -327,7 +268,7 @@ export default function CategoriesPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600 mb-1">Inactive Categories</p>
-                                <p className="text-2xl font-bold text-gray-500">{stats.inactive}</p>
+                                <p className="text-2xl font-bold text-gray-500">{stats.total - stats.active}</p>
                             </div>
                             <div className="p-3 bg-gray-100 rounded-lg">
                                 <Folder className="text-gray-500" size={24} />
@@ -337,8 +278,13 @@ export default function CategoriesPage() {
                     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-600 mb-1">Top Level</p>
-                                <p className="text-2xl font-bold text-purple-600">{stats.topLevel}</p>
+                                <p className="text-sm text-gray-600 mb-1">Last Updated</p>
+                                <p className="text-lg font-bold text-purple-600">
+                                    {categories.length > 0
+                                        ? formatDate(categories[0].updatedAt)
+                                        : 'N/A'
+                                    }
+                                </p>
                             </div>
                             <div className="p-3 bg-purple-100 rounded-lg">
                                 <Folder className="text-purple-600" size={24} />
@@ -354,6 +300,7 @@ export default function CategoriesPage() {
                         <p className="text-sm mt-1">{error}</p>
                     </div>
                 )}
+
 
                 {/* Search & Actions */}
                 <div className="bg-white p-4 rounded-xl border border-gray-200 mb-6">
@@ -374,25 +321,25 @@ export default function CategoriesPage() {
                         {selectedCategories.length > 0 && (
                             <div className="flex flex-wrap gap-3">
                                 <button
-                                    onClick={() => bulkUpdateStatus(true)}
+                                    onClick={bulkSoftDelete}
+                                    disabled={actionLoading !== null}
+                                    className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors disabled:opacity-50"
+                                >
+                                    Move to Trash ({selectedCategories.length})
+                                </button>
+                                <button
+                                    onClick={bulkRestore}
                                     disabled={actionLoading !== null}
                                     className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors disabled:opacity-50"
                                 >
-                                    Activate ({selectedCategories.length})
+                                    Restore ({selectedCategories.length})
                                 </button>
                                 <button
-                                    onClick={() => bulkUpdateStatus(false)}
-                                    disabled={actionLoading !== null}
-                                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
-                                >
-                                    Deactivate ({selectedCategories.length})
-                                </button>
-                                <button
-                                    onClick={deleteSelected}
+                                    onClick={bulkDeletePermanent}
                                     disabled={actionLoading !== null}
                                     className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50"
                                 >
-                                    Delete ({selectedCategories.length})
+                                    Delete Permanently ({selectedCategories.length})
                                 </button>
                                 <button
                                     onClick={() => setSelectedCategories([])}
@@ -423,44 +370,44 @@ export default function CategoriesPage() {
                                     </th>
                                     <th className="p-4 text-left font-semibold">Category</th>
                                     <th className="p-4 text-left font-semibold">Slug</th>
-                                    <th className="p-4 text-left font-semibold">Subcategories</th>
                                     <th className="p-4 text-left font-semibold">Status</th>
+                                    <th className="p-4 text-left font-semibold">Created At</th>
                                     <th className="p-4 text-left font-semibold">Actions</th>
                                 </tr>
                             </thead>
-                            {filteredCategories.length > 0 ? (
-                                showHierarchy ? (
-                                    // Tree view
-                                    filteredCategories
-                                        .filter(cat => !cat.parent_category_id) // Only top-level categories
-                                        .map(cat => renderCategoryRow(cat))
-                                ) : (
-                                    // Flat view
-                                    <tbody>
-                                        {filteredCategories.map((category) => (
+                            <tbody>
+                                {filteredCategories.length > 0 ? (
+                                    filteredCategories.map((category) => {
+                                        const isSelected = selectedCategories.includes(category.category_id)
+                                        const isLoading = actionLoading === category.category_id
+                                        const slug = category.category_name.toLowerCase().replace(/\s+/g, '-')
+
+                                        return (
                                             <tr key={category.category_id} className="border-t hover:bg-gray-50">
                                                 <td className="p-4">
                                                     <input
                                                         type="checkbox"
-                                                        checked={selectedCategories.includes(category.category_id)}
+                                                        checked={isSelected}
                                                         onChange={() => toggleSelection(category.category_id)}
                                                         className="rounded"
                                                         disabled={actionLoading !== null}
                                                     />
                                                 </td>
                                                 <td className="p-4">
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-3">
                                                         {category.category_image ? (
                                                             <img
                                                                 src={category.category_image}
                                                                 alt={category.category_name}
-                                                                className="w-8 h-8 object-cover rounded"
+                                                                className="w-10 h-10 object-cover rounded-lg"
                                                                 onError={(e) => {
                                                                     (e.target as HTMLImageElement).src = '/placeholder-category.png'
                                                                 }}
                                                             />
                                                         ) : (
-                                                            <Folder size={20} className="text-yellow-500" />
+                                                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                                                <Folder size={20} className="text-yellow-500" />
+                                                            </div>
                                                         )}
                                                         <div>
                                                             <div className="font-medium">{category.category_name}</div>
@@ -470,37 +417,30 @@ export default function CategoriesPage() {
                                                 </td>
                                                 <td className="p-4">
                                                     <code className="bg-gray-100 px-2 py-1 rounded text-sm">
-                                                        {category.category_name.toLowerCase().replace(/\s+/g, '-')}
+                                                        {slug}
                                                     </code>
-                                                </td>
-                                                <td className="p-4">
-                                                    {category.children?.length || 0}
                                                 </td>
                                                 <td className="p-4">
                                                     <button
                                                         onClick={() => toggleStatus(category.category_id, category.is_active)}
-                                                        disabled={actionLoading === category.category_id}
-                                                        className={`px-3 py-1 rounded-full text-sm transition-colors ${category.is_active
-                                                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                                                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                                                        disabled={isLoading}
+                                                        className={`px-3 py-1 rounded-full text-sm transition-colors flex items-center gap-1 ${category.is_active
+                                                                ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                                                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                                                             }`}
                                                     >
-                                                        {actionLoading === category.category_id ? (
+                                                        {isLoading ? (
                                                             <Loader2 size={14} className="animate-spin" />
                                                         ) : (
                                                             category.is_active ? 'Active' : 'Inactive'
                                                         )}
                                                     </button>
                                                 </td>
+                                                <td className="p-4 text-sm text-gray-600">
+                                                    {formatDate(category.createdAt)}
+                                                </td>
                                                 <td className="p-4">
                                                     <div className="flex gap-2">
-                                                        <Link
-                                                            href={`/admin/categories/${category.category_id}`}
-                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                                            title="View Details"
-                                                        >
-                                                            <Eye size={16} />
-                                                        </Link>
                                                         <Link
                                                             href={`/admin/categories/${category.category_id}/edit`}
                                                             className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors"
@@ -508,47 +448,21 @@ export default function CategoriesPage() {
                                                         >
                                                             <Edit size={16} />
                                                         </Link>
-                                                        <button
-                                                            onClick={() => deleteCategory(category.category_id)}
-                                                            disabled={actionLoading === category.category_id}
-                                                            className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-                                                            title="Delete Category"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                )
-                            ) : null}
+                                        )
+                                    })
+                                ) : (
+                                    <tr>
+                                        <td colSpan={6} className="p-8 text-center text-gray-500">
+                                            No categories found
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
                         </table>
                     </div>
-
-                    {/* Empty State */}
-                    {filteredCategories.length === 0 && (
-                        <div className="py-16 text-center">
-                            <Folder className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                {search ? 'No categories found' : 'No categories yet'}
-                            </h3>
-                            <p className="text-gray-600 mb-6">
-                                {search
-                                    ? `No results for "${search}". Try a different search term.`
-                                    : 'Get started by creating your first category.'}
-                            </p>
-                            {!search && (
-                                <Link
-                                    href="/admin/categories/add"
-                                    className="inline-flex items-center gap-2 bg-accent text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors"
-                                >
-                                    <Plus size={18} />
-                                    Create First Category
-                                </Link>
-                            )}
-                        </div>
-                    )}
                 </div>
             </div>
         </CMSLayout>
