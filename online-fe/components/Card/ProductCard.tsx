@@ -15,6 +15,7 @@ import {
   Check,
 } from "lucide-react";
 import { ProductModels, ProductType } from "@/models/product.model";
+import { rupiahFormat } from "@/lib/utils/format";
 
 interface ProductCardProps {
   product: ProductModels;
@@ -30,12 +31,6 @@ export default function ProductCard({
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isAddedToCart, setIsAddedToCart] = useState(false);
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(price);
-  };
 
   const getTypeIcon = (type: ProductType) => {
     switch (type) {
@@ -113,7 +108,7 @@ export default function ProductCard({
           <h3 className="font-medium text-gray-900 truncate group-hover:text-accent transition-colors">
             {product.product_name}
           </h3>
-          <p className="text-sm text-gray-500">{formatPrice(product.price)}</p>
+          <p className="text-sm text-gray-500">{rupiahFormat(product.price)}</p>
         </div>
       </Link>
     );
@@ -162,7 +157,7 @@ export default function ProductCard({
           <div className="flex items-center justify-between mt-3">
             <div>
               <span className="text-lg font-bold text-accent">
-                {formatPrice(product.price)}
+                {rupiahFormat(product.price)}
               </span>
               {product.stock_quantity > 0 ? (
                 <span
@@ -333,7 +328,7 @@ export default function ProductCard({
         <div className="flex items-center justify-between">
           <div>
             <span className="text-xl font-bold text-accent">
-              {formatPrice(product.price)}
+              {rupiahFormat(product.price)}
             </span>
           </div>
           <div

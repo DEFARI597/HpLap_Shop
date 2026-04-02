@@ -17,7 +17,7 @@ export class CategoriesEntity {
   @Column({ type: "varchar", length: 150 })
   category_name!: string;
 
-  @Column({ type: "varchar", length: 255 })
+  @Column({ type: "varchar", length: 255, nullable: true })
   category_image!: string;
 
   @Column({

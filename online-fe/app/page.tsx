@@ -91,16 +91,18 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
+      <nav>
+        
+      </nav>
       {/* Hero Section */}
-      <section className="bg-secondary text-white">
+      <section className="bg-white text-white">
         <div className="container mx-auto px-4 py-16 md:py-24">
           <div className="max-w-3xl">
             <Image
-              src="/icon/HpLap_Logo.svg"
+              src="/icon/hplap_logo.svg"
               alt="logo"
-              width={100}
-              height={100}
-              className="svg-transparent"
+              width={50}
+              height={50}
             />
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
               Welcome to Our Store

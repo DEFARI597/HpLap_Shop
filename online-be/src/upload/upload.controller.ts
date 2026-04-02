@@ -1,32 +1,67 @@
 import {
   Controller,
   Post,
-  UploadedFile,
-  UseInterceptors,
+  Patch,
   Body,
+  Param,
+  UseInterceptors,
+  UploadedFile,
 } from "@nestjs/common";
 import { UploadService } from "./upload.service";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { MulterOptions } from "../common/config/multer.config";
+import { ImageFolder } from "./cloudinary/cloudinary.service";
 
 @Controller("upload")
 export class UploadController {
-  constructor(private readonly uploadService: UploadService) { }
+  constructor(private readonly uploadService: UploadService) {}
 
-  @Post("image")
-  @UseInterceptors(FileInterceptor(process.env.UPLOAD_FIELD_NAME || 'file', MulterOptions))
-  async uploadImage(
+  @Post("categories")
+  @UseInterceptors(FileInterceptor("file"))
+  uploadCategory(
     @UploadedFile() file: Express.Multer.File,
-    @Body('target_folder') targetFolder: string,
-    @Body('entity_id') entityId: number,
+    @Body("categoryId") categoryId: string,
   ) {
-    const result = await this.uploadService.uploadFile(file, targetFolder, entityId);
-    console.log("🚀 ~ UploadController ~ uploadImage ~ result:", result)
+    return this.uploadService.uploadCategoriesImage(
+      file,
+      ImageFolder.CATEGORIES,
+      Number(categoryId),
+    );
+  }
 
-    return {
-      success: true,
-      message: "File uploaded successfully",
-      data: result,
-    }
+  @Post("products/main")
+  @UseInterceptors(FileInterceptor("file"))
+  uploadProductMain(
+    @UploadedFile() file: Express.Multer.File,
+    @Body("productId") productId: string,
+  ) {
+    return this.uploadService.uploadProductMainImage(
+      file,
+      ImageFolder.MAIN_PRODUCT,
+      Number(productId),
+    );
+  }
+
+  @Post("products/additional")
+  @UseInterceptors(FileInterceptor("file"))
+  UploadProductAdditional(
+    @UploadedFile() file: Express.Multer.File,
+    @Body("productId") productId: string,
+  ) {
+    return this.uploadService.uploadProductAdditionalImage(
+      file,
+      ImageFolder.ADDITIONAL_PRODUCT,
+      Number(productId),
+    );
+  }
+
+  @Patch(":id/remove-additional-image")
+  async deleteProductAdditional(
+    @Param("id") productId: number,
+    @Body("imageUrl") imageUrl: string,
+  ) {
+    return this.uploadService.deleteProductAdditionalImage(
+      Number(productId),
+      imageUrl,
+    );
   }
 }

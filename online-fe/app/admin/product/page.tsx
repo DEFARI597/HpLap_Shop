@@ -21,6 +21,7 @@ import CMSLayout from "@/components/Layout/AdminCMSLayout";
 import { productService } from "@/services/product/product.service";
 import { ProductModels, ProductType } from "@/models/product.model";
 import { ProductFilter } from "@/services/product/types/product.type";
+import { rupiahFormat } from "@/lib/utils/format";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<ProductModels[]>([]);
@@ -538,7 +539,7 @@ export default function ProductsPage() {
                         </span>
                       </td>
                       <td className="p-4 font-medium">
-                        {formatPrice(product.price)}
+                        {rupiahFormat(product.price)}
                       </td>
                       <td className="p-4">
                         <span

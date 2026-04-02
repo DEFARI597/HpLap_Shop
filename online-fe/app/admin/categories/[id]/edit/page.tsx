@@ -14,6 +14,9 @@ import {
 } from 'lucide-react'
 import CMSLayout from '@/components/Layout/AdminCMSLayout'
 import { categoryService } from '@/services/categories/categories.service'
+import { UploadService } from '@/services/upload/upload.service'
+import UploadDropzone from '@/components/Upload/ImageUpload'
+import { ImageFolder } from '@/services/upload/types/upload-response.type'
 
 export default function EditCategoryPage() {
     const router = useRouter();
@@ -22,9 +25,10 @@ export default function EditCategoryPage() {
 
     // Form state
     const [categoryName, setCategoryName] = useState('');
-    const [categoryImage, setCategoryImage] = useState('');
+    const [categoryImage, setCategoryImage] = useState<File | null> (null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [isActive, setIsActive] = useState(true);
+    const uploadService = new UploadService
 
     // UI state
     const [loading, setLoading] = useState(true);
@@ -33,6 +37,7 @@ export default function EditCategoryPage() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [savedCategoryId, setSavedCategoryId] = useState<number | null> (null)
 
     // Fetch category on mount
     useEffect(() => {
@@ -49,11 +54,11 @@ export default function EditCategoryPage() {
 
             // Populate form
             setCategoryName(category.category_name);
-            setCategoryImage(category.category_image || '');
-            if (category.category_image) {
-                setImagePreview(category.category_image);
-            }
             setIsActive(category.is_active);
+
+            if (category.category_image) {
+                setImagePreview(category.category_image)
+            }
 
         } catch (err: any) {
             console.error('Error fetching category:', err);
@@ -63,21 +68,9 @@ export default function EditCategoryPage() {
         }
     };
 
-    // Handle image URL change
-    const handleImageUrlChange = (url: string) => {
-        setCategoryImage(url);
-        if (url && (url.startsWith('http') || url.startsWith('/'))) {
-            setImagePreview(url);
-        } else {
-            setImagePreview(null);
-        }
-    };
-
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        // Clear previous messages
         setError('');
         setSuccess('');
 
@@ -95,15 +88,23 @@ export default function EditCategoryPage() {
         setIsSubmitting(true);
 
         try {
-            await categoryService.updateCategory(categoryId, {
+            let currentId = categoryId 
+
+            await categoryService.updateCategory(currentId, {
                 category_name: categoryName.trim(),
-                category_image: categoryImage.trim() || 'https://via.placeholder.com/150',
-                is_active: isActive,
-            });
+                is_active: isActive
+            })
+
+            if (categoryImage) {
+                await uploadService.UploadCategoriesImage(
+                    categoryImage,
+                    ImageFolder.CATEGORIES,
+                    currentId
+                )
+            }
 
             setSuccess('Category updated successfully!');
 
-            // Redirect after 2 seconds
             setTimeout(() => {
                 router.push('/admin/categories');
                 router.refresh();
@@ -335,14 +336,16 @@ export default function EditCategoryPage() {
                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                                         Image URL
                                     </label>
-                                    <input
-                                        type="url"
-                                        value={categoryImage}
-                                        onChange={(e) => handleImageUrlChange(e.target.value)}
-                                        placeholder="https://example.com/image.jpg"
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent focus:border-accent outline-none transition"
-                                        disabled={isSubmitting}
-                                    />
+                                    <UploadDropzone
+                                       label='Swap Category Image'
+                                       onFileSelect={(file) => {
+                                        if (file) {
+                                            setCategoryImage(file);
+                                            const objectUrl = URL.createObjectURL(file);
+                                            setImagePreview(objectUrl)
+                                         }
+                                       }}
+                                      />
                                     <p className="text-xs text-gray-500 mt-1.5">
                                         Provide a URL for the category image
                                     </p>
@@ -365,16 +368,6 @@ export default function EditCategoryPage() {
                                                         setError('Invalid image URL. Please check and try again.');
                                                     }}
                                                 />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setCategoryImage('');
-                                                        setImagePreview(null);
-                                                    }}
-                                                    className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
-                                                >
-                                                    <X size={14} />
-                                                </button>
                                             </div>
                                         ) : (
                                             <div className="text-center py-6">

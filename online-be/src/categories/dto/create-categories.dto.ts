@@ -5,8 +5,8 @@ export class CreateCategoryDto {
     @MaxLength(150)
     category_name!: string;
 
+    @IsOptional()
     @IsString()
-    @IsUrl()
     @MaxLength(255)
     category_image!: string;
 

@@ -46,7 +46,7 @@ export class ProductEntity {
   product_main_image!: string;
 
   @Column({ type: "simple-array", nullable: true })
-  product_additional_images!: string[];
+  product_additional_image!: string[];
 
   @Column({ name: "category_id", nullable: true })
   @Index("idx_product_category")

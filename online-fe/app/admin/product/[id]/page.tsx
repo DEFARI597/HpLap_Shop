@@ -10,7 +10,7 @@ import {
     Package,
     Star,
     Calendar,
-    DollarSign,
+    Banknote,
     Layers,
     Image as ImageIcon,
     Loader2,
@@ -25,6 +25,7 @@ import {
 import CMSLayout from '@/components/Layout/AdminCMSLayout'
 import { productService } from '@/services/product/product.service'
 import { ProductModels, ProductType } from '@/models/product.model'
+import { rupiahFormat } from '@/lib/utils/format'
 
 export default function ViewProductPage() {
     const router = useRouter()
@@ -340,9 +341,9 @@ export default function ViewProductPage() {
                                 </div>
 
                                 {/* Thumbnail Gallery */}
-                                {product.product_additional_images?.length > 0 && (
+                                {product.product_additional_image?.length > 0 && (
                                     <div>
-                                        <p className="text-sm font-medium text-gray-700 mb-2">Additional Images</p>
+                                        <p className="text-sm font-medium text-gray-700 mb-2">All Images</p>
                                         <div className="grid grid-cols-4 gap-2">
                                             {product.product_main_image && (
                                                 <button
@@ -359,7 +360,7 @@ export default function ViewProductPage() {
                                                     />
                                                 </button>
                                             )}
-                                            {product.product_additional_images.map((img, index) => (
+                                            {product.product_additional_image.map((img, index) => (
                                                 <button
                                                     key={index}
                                                     onClick={() => setActiveImage(img)}
@@ -402,10 +403,10 @@ export default function ViewProductPage() {
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                                     <div className="bg-gray-50 p-3 rounded-lg">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <DollarSign size={16} className="text-gray-500" />
+                                            <Banknote size={16} className="text-gray-500" />
                                             <span className="text-xs text-gray-500">Price</span>
                                         </div>
-                                        <p className="text-lg font-bold text-gray-900">{formatPrice(product.price)}</p>
+                                        <p className="text-lg font-bold text-gray-900">{rupiahFormat(product.price)}</p>
                                     </div>
                                     <div className="bg-gray-50 p-3 rounded-lg">
                                         <div className="flex items-center gap-2 mb-1">

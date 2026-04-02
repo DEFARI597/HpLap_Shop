@@ -1,21 +1,21 @@
 import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { MulterModule } from "@nestjs/platform-express";
+import { memoryStorage } from "multer";
 import { UploadService } from "./upload.service";
 import { UploadController } from "./upload.controller";
-import { ServeStaticModule } from "@nestjs/serve-static";
-import { join } from "path";
-import { CategoriesEntity } from "../entities/categories.entities";
+import { CloudinaryService } from "./cloudinary/cloudinary.service";
 import { ProductEntity } from "../entities/products.entities";
-import { TypeOrmModule } from "@nestjs/typeorm";
+import { CategoriesEntity } from "../entities/categories.entities";
 
 @Module({
   imports: [
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, "..", "storage", "public"),
-      serveRoot: "/storage/public",
+    MulterModule.register({
+      storage: memoryStorage(),
     }),
-    TypeOrmModule.forFeature([CategoriesEntity, ProductEntity]),
+    TypeOrmModule.forFeature([ProductEntity, CategoriesEntity]),
   ],
   controllers: [UploadController],
-  providers: [UploadService],
+  providers: [UploadService, CloudinaryService],
 })
-export class UploadModule { }
+export class UploadModule {}

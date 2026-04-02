@@ -1,20 +1,21 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { UploadController } from './upload.controller';
-import { UploadService } from './upload.service';
+import { Test, TestingModule } from "@nestjs/testing";
+import { UploadController } from "./upload.controller";
+import { UploadService } from "./upload.service";
+import { CloudinaryService } from "./cloudinary/cloudinary.service";
 
-describe('UploadController', () => {
+describe("UploadController", () => {
   let controller: UploadController;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UploadController],
-      providers: [UploadService],
+      providers: [UploadService, CloudinaryService],
     }).compile();
 
     controller = module.get<UploadController>(UploadController);
   });
 
-  it('should be defined', () => {
+  it("should be defined", () => {
     expect(controller).toBeDefined();
   });
 });

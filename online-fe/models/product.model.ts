@@ -13,7 +13,7 @@ export interface ProductModels {
   stock_quantity: number;
   product_type: ProductType;
   product_main_image: string;
-  product_additional_images: string[];
+  product_additional_image: string[];
   category_id: number;
   category?: {
     category_id: number;
