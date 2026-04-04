@@ -30,6 +30,9 @@ import { UploadModule } from './upload/upload.module';
         autoLoadEntities: true,
         logging: config.getOrThrow<boolean>('DB_LOGGING'),
         synchronize: config.getOrThrow<boolean>('DB_SYNCHRONIZE'),
+        ssl: {
+              rejectUnauthorized: false, 
+          },
       }),
     }),
     UsersModule,
