@@ -17,7 +17,7 @@ export interface AuthAdmin {
 class AdminService {
 
     async adminLogin(data: AdminLoginDto): Promise<AuthResponse | undefined> {
-        const response = await apiClient.post<AuthResponse>('/api/admin/login', data);
+        const response = await apiClient.post<AuthResponse>('/admin/login', data);
         return response.success ? response.data : undefined;
     }
 
