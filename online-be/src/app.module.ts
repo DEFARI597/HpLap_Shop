@@ -29,7 +29,7 @@ import { UploadModule } from './upload/upload.module';
         database: config.getOrThrow<string>('DB_NAME'),
         autoLoadEntities: true,
         logging: config.getOrThrow<boolean>('DB_LOGGING'),
-        synchronize: config.getOrThrow<boolean>('DB_SHYNCHRONIZE'),
+        synchronize: config.getOrThrow<boolean>('DB_SYNCHRONIZE'),
       }),
     }),
     UsersModule,
