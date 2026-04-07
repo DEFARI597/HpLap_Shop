@@ -5,10 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   Index,
 } from "typeorm";
 import { CategoriesEntity } from "./categories.entities";
+import { OrdersItemEntity } from "./orders-items.entities";
 
 export enum ProductType {
   WINDOWS = "windows",
@@ -80,6 +82,10 @@ export class ProductEntity {
 
   @Column({ type: "decimal", precision: 3, scale: 2, default: 0 })
   rating?: number;
+
+  // Di dalam ProductEntity
+  @OneToMany(() => OrdersItemEntity, (orderItem) => orderItem.product)
+  order_items!: OrdersItemEntity[];
 
   @CreateDateColumn({ name: "created_at", type: "timestamp" })
   created_at!: Date;

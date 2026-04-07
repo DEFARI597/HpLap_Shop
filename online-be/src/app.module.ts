@@ -9,6 +9,12 @@ import { AdminModule } from './admin/admin.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ProductModule } from './product/product.module';
 import { UploadModule } from './upload/upload.module';
+import { OrdersModule } from './orders/orders.module';
+import { ProductEntity } from './entities/products.entities';
+import { OrdersEntity } from './entities/orders.entities';
+import { OrdersItemEntity } from './entities/orders-items.entities';
+import { CategoriesEntity } from './entities/categories.entities'; 
+import { User } from './entities/users.entities';
 
 @Module({
   imports: [
@@ -29,6 +35,7 @@ import { UploadModule } from './upload/upload.module';
         database: config.getOrThrow<string>('DB_NAME'),
         autoLoadEntities: true,
         logging: config.getOrThrow<boolean>('DB_LOGGING'),
+        entities: [ProductEntity, OrdersEntity, OrdersItemEntity, CategoriesEntity, User],
         synchronize: config.getOrThrow<boolean>('DB_SYNCHRONIZE'),
         ssl: {
               rejectUnauthorized: false, 
@@ -41,6 +48,7 @@ import { UploadModule } from './upload/upload.module';
     CategoriesModule,
     ProductModule,
     UploadModule,
+    OrdersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
