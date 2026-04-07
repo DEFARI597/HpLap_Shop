@@ -9,6 +9,7 @@ const navItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: Icons.Home },
   { name: "Product", href: "/admin/product", icon: Icons.PackageSearch },
   { name: "Categories", href: "/admin/categories", icon: Icons.Folder },
+  {name: "Orders", href: "/admin/orders", icon: Icons.ClockArrowUp},
   { name: "Users", href: "/admin/users", icon: Icons.Users },
 ];
 
@@ -51,7 +52,7 @@ export default function Sidebar() {
                 <Link
                   href={item.href}
                   className={`flex items-center text-primary p-3 rounded-lg transition-colors ${
-                    isActive ? "bg-secondary" : " inset-x-0 bottom-0"
+                    isActive ? "bg-secondary" : "inset-x-0 bottom-0"
                   }`}
                 >
                   <Icon size={20} />

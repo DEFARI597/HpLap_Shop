@@ -9,7 +9,8 @@ import {
     ChevronRight,
     Bell,
     Search,
-    Menu
+    Menu,
+    ClockArrowUp
 } from 'lucide-react'
 
 export const Icons = {
@@ -23,5 +24,6 @@ export const Icons = {
     ChevronRight,
     Bell,
     Search,
-    Menu
+    Menu,
+    ClockArrowUp
 }
