@@ -32,6 +32,10 @@ const nextConfig: NextConfig = {
         destination: '/admin/product/add-product'
       },
       {
+        source: '/admin/orders',
+        destination: '/admin/orders'
+      },
+      {
         source: '/register',
         destination: '/users/register',
       },

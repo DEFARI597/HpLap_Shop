@@ -19,7 +19,8 @@ import { CategoriesModels } from "@/models/categories.model";
 
 // Components
 import ProductCard from "@/components/Card/ProductCard";
-import Navbar from "@/components/Navbar/Navbar"; // <-- Pemanggilan Navbar
+import Navbar from "@/components/Navbar/Navbar";
+import FooterSection from "@/components/Footer/FooterSection";
 
 export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<ProductModels[]>([]);
@@ -190,7 +191,7 @@ export default function HomePage() {
                       {category.category_name.substring(0, 1)}
                     </span>
                   </div>
-                  <span className="text-[11px] font-black tracking-widest text-gray-950 uppercase transition-colors">
+                  <span className="text-[11px] font-black tracking-widest text-gray-950 uppercase">
                     {category.category_name}
                   </span>
                   <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -274,6 +275,11 @@ export default function HomePage() {
           </section>
         </motion.div>
       </AnimatePresence>
+
+      {/* FOOTER SECTION: Di-wrap untuk mencegah overflow horizontal */}
+      <div className="relative w-full overflow-hidden">
+        <FooterSection />
+      </div>
     </main>
   );
 }

@@ -71,9 +71,6 @@ export default function ProductCard({
 
         {/* Floating Badges - Tetap ada tapi tidak menghalangi tengah gambar */}
         <div className="absolute top-4 left-4 flex flex-col gap-2">
-          <span className="px-3 py-1 bg-white/80 backdrop-blur-md border border-gray-100 rounded-full text-[10px] font-black uppercase tracking-widest text-gray-900 shadow-sm">
-            {getOSTag(product.product_type)}
-          </span>
           {product.is_featured && (
             <span className="px-3 py-1 bg-gray-950 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
               Featured
