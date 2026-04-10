@@ -83,7 +83,6 @@ export class ProductEntity {
   @Column({ type: "decimal", precision: 3, scale: 2, default: 0 })
   rating?: number;
 
-  // Di dalam ProductEntity
   @OneToMany(() => OrdersItemEntity, (orderItem) => orderItem.product)
   order_items!: OrdersItemEntity[];
 
