@@ -1,71 +1,118 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { OrdersEntity } from '../entities/orders.entities';
-import { ProductEntity } from '../entities/products.entities';
-import { OrdersItemEntity } from '../entities/orders-items.entities';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, DataSource } from "typeorm";
+import { OrdersEntity, OrdersStatus } from "../entities/orders.entities";
+import { ProductEntity } from "../entities/products.entities";
+import { OrdersItemEntity } from "../entities/orders-items.entities";
+import { User } from "../entities/users.entities"; // Import User Entity
 
 @Injectable()
 export class OrdersService {
   constructor(
     @InjectRepository(OrdersEntity)
     private readonly orderRepository: Repository<OrdersEntity>,
-    
+
     @InjectRepository(ProductEntity)
     private readonly productRepository: Repository<ProductEntity>,
-    
-    // Repository ini sebenarnya opsional jika Anda menggunakan 'cascade: true'
-    @InjectRepository(OrdersItemEntity)
-    private readonly ordersItemRepository: Repository<OrdersItemEntity>
+
+    private dataSource: DataSource,
   ) {}
 
-  async create(createOrderDto: { product_id: number; quantity: number }) {
-    // 1. Cari produk untuk ambil harga dan validasi stok
-    const product = await this.productRepository.findOne({
-      where: { product_id: createOrderDto.product_id },
-    });
+  async create(createOrderDto: {
+    user_id: number; 
+    shipping_name: string; 
+    shipping_email: string; 
+    shipping_address: string; 
+    items: { product_id: number; quantity: number }[];
+  }) {
+    return await this.dataSource.transaction(async (manager) => {
+      const user = await manager.findOne(User, {
+        where: { id: createOrderDto.user_id },
+      });
+      if (!user) {
+        throw new NotFoundException(
+          `User dengan ID ${createOrderDto.user_id} tidak ditemukan`,
+        );
+      }
 
-    if (!product) {
-      throw new NotFoundException('Produk tidak ditemukan!');
-    }
+      let grandTotal = 0;
+      const orderItems: OrdersItemEntity[] = [];
 
-    // 2. Kalkulasi harga & buat referensi
-    const totalPrice = Number(product.price) * createOrderDto.quantity;
-    const orderRef = `ORD-${Date.now()}`;
+      for (const item of createOrderDto.items) {
+        const product = await manager.findOne(ProductEntity, {
+          where: { product_id: item.product_id, is_active: true },
+          lock: { mode: "pessimistic_write" },
+        });
 
-    // 3. Buat Object Order beserta Items-nya (mengandalkan Cascade)
-    const newOrder = this.orderRepository.create({
-      order_reference: orderRef,
-      total_price: totalPrice,
-      status: 'pending',
-      items: [
-        {
-          product: product, // Menghubungkan ke ProductEntity
-          quantity: createOrderDto.quantity,
-          price_at_purchase: product.price, // Snapshot harga saat ini
+        if (!product) {
+          throw new NotFoundException(
+            `Produk dengan ID ${item.product_id} tidak ditemukan atau tidak aktif`,
+          );
         }
-      ]
-    });
 
-    // 4. Save (Akan otomatis menyimpan ke tabel 'orders' DAN 'orders_item')
-    return await this.orderRepository.save(newOrder);
+        if (product.stock_quantity < item.quantity) {
+          throw new BadRequestException(
+            `Stok produk ${product.product_name} tidak mencukupi. Tersisa: ${product.stock_quantity}`,
+          );
+        }
+
+        product.stock_quantity -= item.quantity;
+        await manager.save(product);
+
+        const subTotal = Number(product.price) * item.quantity;
+        grandTotal += subTotal;
+
+        const orderItem = manager.create(OrdersItemEntity, {
+          product: product,
+          quantity: item.quantity,
+          price_at_purchase: product.price,
+        });
+
+        orderItems.push(orderItem);
+      }
+
+      const orderRef = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+      const newOrder = manager.create(OrdersEntity, {
+        order_reference: orderRef,
+        user: user,
+        user_id: user.id,
+        shipping_name: createOrderDto.shipping_name,
+        shipping_email: createOrderDto.shipping_email,
+        shipping_address: createOrderDto.shipping_address,
+        total_price: grandTotal,
+        status: OrdersStatus.PENDING,
+        items: orderItems,
+      });
+
+      return await manager.save(newOrder);
+    });
   }
 
   async findAll() {
-    // Perbaikan: Ambil relasi 'items' dan 'product' di dalamnya
-    return await this.orderRepository.find({ 
-      relations: ['items', 'items.product'] 
+    return await this.orderRepository.find({
+      relations: ["items", "items.product", "user"], // Tambahkan relation user
+      order: { created_at: "DESC" },
     });
   }
 
   async findOne(id: number) {
-    // Perbaikan: Ambil relasi 'items' dan 'product' di dalamnya
     const order = await this.orderRepository.findOne({
       where: { order_id: id },
-      relations: ['items', 'items.product'],
+      relations: ["items", "items.product", "user"], // Tambahkan relation user
     });
-    
-    if (!order) throw new NotFoundException('Pesanan tidak ditemukan');
+
+    if (!order) throw new NotFoundException("Pesanan tidak ditemukan");
     return order;
+  }
+
+  async updateStatus(id: number, status: OrdersStatus) {
+    const order = await this.findOne(id);
+    order.status = status;
+    return await this.orderRepository.save(order);
   }
 }
