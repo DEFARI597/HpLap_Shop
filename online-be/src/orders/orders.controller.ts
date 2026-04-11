@@ -22,6 +22,7 @@ export class OrdersController {
       shipping_name: string;
       shipping_email: string;
       shipping_address: string;
+      payment_method: string;
       items: { product_id: number; quantity: number }[];
     },
   ) {

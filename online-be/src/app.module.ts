@@ -15,6 +15,7 @@ import { OrdersEntity } from './entities/orders.entities';
 import { OrdersItemEntity } from './entities/orders-items.entities';
 import { CategoriesEntity } from './entities/categories.entities'; 
 import { User } from './entities/users.entities';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { User } from './entities/users.entities';
     ProductModule,
     UploadModule,
     OrdersModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],
