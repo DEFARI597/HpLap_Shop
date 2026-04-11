@@ -17,6 +17,7 @@ export interface OrdersModels {
   shipping_name: string;
   shipping_email: string;
   shipping_address: string;
+  payment_method: string;
   total_price: number;
   status: OrdersStatus;
   items: OrderItemModels[];

@@ -44,6 +44,9 @@ export class OrdersEntity {
   @Column({ type: "text" })
   shipping_address!: string;
 
+  @Column({ type: "varchar", length: 50, nullable: true })
+  payment_method!: string;
+
   @Column({ type: "decimal", precision: 12, scale: 2 })
   total_price!: number;
 

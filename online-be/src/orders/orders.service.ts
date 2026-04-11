@@ -8,7 +8,7 @@ import { Repository, DataSource } from "typeorm";
 import { OrdersEntity, OrdersStatus } from "../entities/orders.entities";
 import { ProductEntity } from "../entities/products.entities";
 import { OrdersItemEntity } from "../entities/orders-items.entities";
-import { User } from "../entities/users.entities"; // Import User Entity
+import { User } from "../entities/users.entities";
 
 @Injectable()
 export class OrdersService {
@@ -23,10 +23,11 @@ export class OrdersService {
   ) {}
 
   async create(createOrderDto: {
-    user_id: number; 
-    shipping_name: string; 
-    shipping_email: string; 
-    shipping_address: string; 
+    user_id: number;
+    shipping_name: string;
+    shipping_email: string;
+    shipping_address: string;
+    payment_method: string;
     items: { product_id: number; quantity: number }[];
   }) {
     return await this.dataSource.transaction(async (manager) => {
@@ -84,6 +85,7 @@ export class OrdersService {
         shipping_name: createOrderDto.shipping_name,
         shipping_email: createOrderDto.shipping_email,
         shipping_address: createOrderDto.shipping_address,
+        payment_method: createOrderDto.payment_method,
         total_price: grandTotal,
         status: OrdersStatus.PENDING,
         items: orderItems,
@@ -95,7 +97,7 @@ export class OrdersService {
 
   async findAll() {
     return await this.orderRepository.find({
-      relations: ["items", "items.product", "user"], // Tambahkan relation user
+      relations: ["items", "items.product", "user"],
       order: { created_at: "DESC" },
     });
   }
@@ -103,7 +105,7 @@ export class OrdersService {
   async findOne(id: number) {
     const order = await this.orderRepository.findOne({
       where: { order_id: id },
-      relations: ["items", "items.product", "user"], // Tambahkan relation user
+      relations: ["items", "items.product", "user"], 
     });
 
     if (!order) throw new NotFoundException("Pesanan tidak ditemukan");
@@ -114,5 +116,25 @@ export class OrdersService {
     const order = await this.findOne(id);
     order.status = status;
     return await this.orderRepository.save(order);
+  }
+
+  async handlePaymentSuccess(orderId: number, paymentChannel: string) {
+    console.log(`[OrdersService] Mencoba update order ID: ${orderId}`);
+
+    const order = await this.orderRepository.findOne({
+      where: { order_id: orderId },
+    });
+    if (!order) {
+      console.error(`[OrdersService] ❌ Order ID ${orderId} tidak ditemukan!`);
+      return null;
+    }
+    order.status = OrdersStatus.PAID; 
+    if (paymentChannel) {
+      order.payment_method = paymentChannel;
+    }
+    const savedOrder = await this.orderRepository.save(order);
+    console.log(`[OrdersService] ✅ Order ${orderId} BERHASIL diupdate ke database!`);
+    
+    return savedOrder;
   }
 }
