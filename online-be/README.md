@@ -30,9 +30,9 @@
 ```bash
 $ npm install
 $ cp .env.example .env
-$ docker compose up -d --build 
+$ docker compose up -d --build
 # One-time command to create first admin
-curl -X POST http://localhost:8000/auth/setup-first-admin \
+curl -X POST http://localhost:8000/api/auth/setup-first-admin \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@company.com",
