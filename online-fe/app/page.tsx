@@ -135,21 +135,14 @@ export default function HomePage() {
 
       <div className="container mx-auto px-8">
         <section className="pb-32">
-          <div className="flex items-center gap-4 mb-12">
-            <div className="p-3 bg-gray-950 rounded-2xl text-white shadow-lg">
-              <LayoutGrid size={24} />
+            <div className="max-w-xl">
+              <h1 className="text-4xl font-bold tracking-tighter text-primary mb-4 ">
+                Temukan{" "}
+                <span className="font-light text-secondary">Kategori</span>
+              </h1>
             </div>
-            <div>
-              <h2 className="text-3xl font-black tracking-tight text-gray-950 uppercase">
-                Explore Categories
-              </h2>
-              <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">
-                Temukan perangkat berdasarkan kebutuhan Anda.
-              </p>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 mt-24">
             {categories.map((category) => (
               <Link
                 key={category.category_id}
@@ -175,20 +168,16 @@ export default function HomePage() {
         <section className="pb-32">
           <div className="flex items-end justify-between mb-20 border-b border-gray-100 pb-10">
             <div className="max-w-xl">
-              <h2 className="text-5xl font-black tracking-tighter text-gray-950 mb-4 uppercase">
-                Featured{" "}
-                <span className="font-light text-gray-300 italic">Edition</span>
-              </h2>
-              <p className="text-lg text-gray-400 font-medium leading-relaxed">
-                Pilihan produk terbaik dengan teknologi terdepan untuk performa
-                maksimal.
-              </p>
+              <h1>
+                Produk{" "}
+                <span className="font-light text-secondary">Terlaris</span>
+              </h1>
             </div>
             <Link
               href="/products"
-              className="group flex items-center gap-2 text-[10px] font-black tracking-[0.3em] uppercase text-gray-400 hover:text-gray-950 transition-all"
+              className="group flex items-center gap-2 text-[10px] font-bold tracking-[0.3em] uppercase text-gray-400 hover:text-gray-950 transition-all"
             >
-              View Collection{" "}
+              Lihat Selengkapnya{" "}
               <ChevronRight
                 size={14}
                 className="group-hover:translate-x-1 transition-transform"
@@ -206,37 +195,6 @@ export default function HomePage() {
                 <ProductCard product={product} />
               </motion.div>
             ))}
-          </div>
-        </section>
-
-        <section className="pb-32">
-          <div className="bg-gray-950 rounded-[60px] p-16 md:p-24 text-white overflow-hidden relative shadow-[0_40px_100px_rgba(0,0,0,0.2)]">
-            <div className="relative z-10">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-10 mb-16">
-                <div>
-                  <span className="text-blue-500 font-black tracking-[0.4em] uppercase text-[10px] mb-4 block">
-                    Just Arrived
-                  </span>
-                  <h2 className="text-5xl font-black tracking-tight text-white uppercase">
-                    Eksplorasi Terbaru.
-                  </h2>
-                </div>
-                <Link
-                  href="/products"
-                  className="bg-white text-gray-950 px-10 py-5 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-gray-200 transition-colors active:scale-95"
-                >
-                  Lihat Semua
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                {newProducts.map((product) => (
-                  <ProductCard key={product.product_id} product={product} />
-                ))}
-              </div>
-            </div>
-            <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-600/10 blur-[120px] rounded-full" />
-            <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-purple-600/10 blur-[120px] rounded-full" />
           </div>
         </section>
       </div>
