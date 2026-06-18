@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, Loader2, LayoutGrid, ArrowUpRight } from "lucide-react";
+import { ChevronRight, Loader2, Grid3x2, ChevronLeft } from "lucide-react";
+import gsap from "gsap";
 
 // Services & Models
 import { productService } from "@/services/product/product.service";
@@ -14,6 +15,7 @@ import { CategoriesModels } from "@/models/categories.model";
 
 // Components
 import ProductCard from "@/components/Card/ProductCard";
+import CategoryCard from "@/components/Card/CategoryCard";
 import Navbar from "@/components/Navbar/Navbar";
 import FooterSection from "@/components/Footer/FooterSection";
 
@@ -39,6 +41,9 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [currentCatPage, setCurrentCatPage] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(6);
+  const sliderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchHomeData();
@@ -50,6 +55,23 @@ export default function HomePage() {
     }, 10000);
     return () => clearInterval(timer);
   }, [currentSlide]);
+
+  const maxPage = Math.max(0, categories.length - itemsPerPage);
+  const limitedCategories = categories.slice(0, 12);
+
+  useEffect(() => {
+    if (sliderRef.current) {
+      const stepPercent = 100 / categories.length;
+      const finalXPercent = -currentCatPage * stepPercent;
+
+      gsap.to(sliderRef.current, {
+        xPercent: finalXPercent,
+        duration: 0.4,
+        ease: "power2.out",
+        overwrite: "auto",
+      });
+    }
+  }, [currentCatPage, categories.length]);
 
   const fetchHomeData = async () => {
     try {
@@ -134,34 +156,121 @@ export default function HomePage() {
       </section>
 
       <div className="container mx-auto px-8">
-        <section className="pb-32">
-            <div className="max-w-xl">
-              <h1 className="text-4xl font-bold tracking-tighter text-primary mb-4 ">
+        <section className="pb-32 overflow-hidden">
+          <div className="w-full flex items-end justify-between mb-6 border-b border-gray-100 pb-4">
+            <div className="flex-grow">
+              <h1>
                 Temukan{" "}
                 <span className="font-light text-secondary">Kategori</span>
               </h1>
             </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 mt-24">
-            {categories.map((category) => (
-              <Link
-                key={category.category_id}
-                href={`/products?category=${category.category_id}`}
-                className="group relative bg-white p-8 rounded-[32px] border border-gray-100 flex flex-col items-center justify-center text-center transition-all duration-500 hover:shadow-[0_20px_40px_rgba(0,0,0,0.04)] hover:-translate-y-2 active:scale-95"
-              >
-                <div className="w-12 h-12 mb-4 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-gray-950 group-hover:text-white transition-colors duration-500">
-                  <span className="font-black text-lg uppercase">
-                    {category.category_name.substring(0, 1)}
+            {limitedCategories.length > 6 && (
+              <div className="hidden md:block flex-shrink-0 pb-1">
+                <Link
+                  href="/categories"
+                  className="inline-flex items-center justify-end gap-1 text-xs md:text-sm lg:text-md font-bold text-secondary hover:text-primary transition-colors duration-200 group"
+                >
+                  Lihat Semua
+                  <span className="transform group-hover:translate-x-1 transition-transform duration-200">
+                    <ChevronRight className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5 flex-shrink-0" />
                   </span>
-                </div>
-                <span className="text-[11px] font-black tracking-widest text-gray-950 uppercase">
-                  {category.category_name}
-                </span>
-                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <ArrowUpRight size={16} className="text-gray-300" />
-                </div>
-              </Link>
-            ))}
+                </Link>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4 w-full justify-between mt-12 sm:mt-24 relative">
+            {limitedCategories.length > itemsPerPage ? (
+              <button
+                onClick={() =>
+                  setCurrentCatPage((prev) => {
+                    if (prev === 0) return maxPage;
+                    return prev - 1;
+                  })
+                }
+                className="hidden sm:flex p-3 rounded-full border border-gray-100 bg-white text-gray-950 shadow-md items-center justify-center flex-shrink-0 z-20 transition-all duration-300 enabled:hover:bg-gray-50 enabled:active:scale-95"
+                aria-label="Previous Category"
+              >
+                <ChevronLeft size={18} />
+              </button>
+            ) : (
+              <div className="hidden sm:block w-[44px] flex-shrink-0" />
+            )}
+
+            <div className="flex-grow overflow-hidden px-1">
+              <div
+                ref={sliderRef}
+                className="grid grid-cols-3 grid-rows-2 gap-2 sm:flex sm:gap-2 will-change-transform"
+              >
+                {limitedCategories
+                  .slice(
+                    0,
+                    typeof window !== "undefined" && window.innerWidth >= 640
+                      ? categories.length
+                      : 6,
+                  )
+                  .map((category, index) => {
+                    const isLastMobileSlot = index === 5;
+                    const hasMoreData = categories.length > 6;
+
+                    return (
+                      <div
+                        key={category.category_id || index}
+                        className="w-full sm:w-[calc(16.666%-7px)] sm:flex-shrink-0 transition-all duration-300"
+                      >
+                        {isLastMobileSlot && hasMoreData ? (
+                          <>
+                            <div className="block sm:hidden h-full">
+                              <Link
+                                href="/categories"
+                                className="group flex flex-col bg-white rounded-[4px] border border-gray-100 overflow-hidden hover:shadow-[0_12px_24px_rgba(0,0,0,0.03)] hover:-translate-y-1 active:scale-95 transition-all duration-300 h-full"
+                              >
+                                <div className="w-full aspect-square bg-gray-50 relative overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                  <div className="w-10 h-10 flex items-center justify-center border border-gray-200 rounded-full bg-gray-200/60 group-hover:scale-110 transition-transform duration-500 ease-out flex-shrink-0">
+                                    <Grid3x2
+                                      size={16}
+                                      className="text-secondary"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="p-1 flex flex-col items-center justify-center text-center bg-white flex-grow">
+                                  <h3 className="font-bold text-[10px] text-primary transition-colors tracking-tight line-clamp-1">
+                                    Lihat Lainnya
+                                  </h3>
+                                </div>
+                              </Link>
+                            </div>
+
+                            <div className="hidden sm:block h-full">
+                              <CategoryCard category={category} />
+                            </div>
+                          </>
+                        ) : (
+                          <CategoryCard category={category} />
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {limitedCategories.length > itemsPerPage ? (
+              <button
+                onClick={() =>
+                  setCurrentCatPage((prev) => {
+                    if (prev >= maxPage) return 0;
+                    return prev + 1;
+                  })
+                }
+                className="hidden sm:flex p-3 rounded-full border border-gray-100 bg-white text-gray-950 shadow-md items-center justify-center flex-shrink-0 z-20 transition-all duration-300 enabled:hover:bg-gray-50 enabled:active:scale-95"
+                aria-label="Next Category"
+              >
+                <ChevronRight size={18} />
+              </button>
+            ) : (
+              <div className="hidden sm:block w-[44px] flex-shrink-0" />
+            )}
           </div>
         </section>
 
