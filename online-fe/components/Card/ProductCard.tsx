@@ -2,53 +2,51 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ShoppingCart, ArrowUpRight, ShieldCheck } from "lucide-react";
-import { ProductModels, ProductType } from "@/models/product.model";
+import { ShoppingCart, ArrowRight } from "lucide-react";
+import { ProductModels } from "@/models/product.model";
 import { rupiahFormat } from "@/lib/utils/format";
 import { motion } from "framer-motion";
+import { useCartStore } from "@/hooks/Cart/useCartStore";
 
 interface ProductCardProps {
   product: ProductModels;
   variant?: "default" | "compact" | "horizontal";
+  isPlaceholder?: boolean;
 }
 
 export default function ProductCard({
   product,
-  variant = "default",
+  isPlaceholder = false,
 }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const addItem = useCartStore((state) => state.addItem);
 
-  const getOSTag = (type: ProductType) => {
-    const tags = {
-      [ProductType.WINDOWS]: "Windows OS",
-      [ProductType.ANDROID]: "Android",
-      [ProductType.IOS]: "iOS",
-      [ProductType.MAC]: "macOS",
-    };
-    return tags[type] || "Device";
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    addItem(product, 1);
   };
 
-  if (variant === "compact") {
+  if (isPlaceholder) {
     return (
-      <Link
-        href={`/products/${product.product_id}`}
-        className="group flex items-center gap-4 p-3 hover:bg-gray-50 rounded-2xl transition-all duration-300"
-      >
-        <div className="w-14 h-14 bg-[#f9f9fb] rounded-xl overflow-hidden flex-shrink-0 border border-gray-100">
-          <img
-            src={product.product_main_image || "/placeholder.png"}
-            alt={product.product_name}
-            className="w-full h-full object-contain p-2 group-hover:scale-110 transition-transform duration-500"
-          />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-[13px] font-bold text-gray-900 truncate tracking-tight">
-            {product.product_name}
+      <Link href="/products" className="block w-full h-full">
+        <motion.div
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          className="group relative bg-gray-50 rounded-[24px] sm:rounded-[32px] p-6 transition-all duration-500 shadow-sm hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] border border-gray-100 flex flex-col items-center justify-center text-center w-full min-w-0 h-full cursor-pointer"
+        >
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-full flex items-center justify-center mb-4 text-primary group-hover:text-white transition-all duration-500 shadow-sm group-hover:scale-110">
+            <ArrowRight className="w-6 h-6 sm:w-8 sm:h-8 text-primary group-hover:translate-x-1 transition-transform duration-300" />
+          </div>
+
+          <h3 className="text-sm sm:text-base font-bold text-primary transition-colors duration-300">
+            Lihat Semua Produk
           </h3>
-          <p className="text-[12px] text-gray-400 font-medium">
-            {rupiahFormat(product.price)}
+          <p className="text-xs text-primary mt-1 transition-colors duration-300">
+            Jelajahi lebih banyak pilihan menarik lainnya
           </p>
-        </div>
+        </motion.div>
       </Link>
     );
   }
@@ -57,83 +55,49 @@ export default function ProductCard({
     <motion.div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group relative bg-white rounded-[32px] p-4 transition-all duration-500 shadow-lg hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-transparent hover:border-gray-50"
+      className="group relative bg-white rounded-[24px] sm:rounded-[32px] p-4 sm:p-5 transition-all duration-500 shadow-md hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] border border-gray-100 flex flex-col justify-between w-full min-w-0 h-full"
     >
-      {/* Image Wrapper - Bersih dari Overlay */}
-      <div className="relative aspect-square rounded-[24px] bg-[#fbfbfd] overflow-hidden mb-6 flex items-center justify-center p-8">
-        <motion.img
-          animate={{ scale: isHovered ? 1.1 : 1 }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      <Link
+        href={`${product.product_id}/product`}
+        className="w-full aspect-square bg-[#f9f9fb] rounded-[20px] sm:rounded-[24px] overflow-hidden flex items-center justify-center relative border border-gray-50/50 mb-4"
+      >
+        <img
           src={product.product_main_image || "/placeholder.png"}
           alt={product.product_name}
-          className="w-full h-full object-contain mix-blend-multiply"
+          className="w-4/5 h-4/5 object-contain group-hover:scale-105 transition-transform duration-500 ease-out"
         />
+      </Link>
 
-        {/* Floating Badges - Tetap ada tapi tidak menghalangi tengah gambar */}
-        <div className="absolute top-4 left-4 flex flex-col gap-2">
-          {product.is_featured && (
-            <span className="px-3 py-1 bg-gray-950 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
-              Featured
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Content Area */}
-      <div className="px-2">
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] mb-1">
+      <div className="px-1 flex-grow flex flex-col justify-between">
+        <div className="mb-4 sm:mb-5">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <span className="text-[10px] text-gray-400 font-medium tracking-[0.1em] truncate">
               {product.brand || "HpLap Select"}
             </span>
-            <Link href={`/products/${product.product_id}`}>
-              <h3 className="text-lg font-bold text-gray-950 leading-tight tracking-tight transition-colors line-clamp-1">
-                {product.product_name}
-              </h3>
-            </Link>
           </div>
-          <Link
-            href={`/${product.product_id}/product`}
-            className="p-2 text-gray-300 hover:text-gray-900"
-          >
-            <ArrowUpRight size={20} />
-          </Link>
+
+          <h3 className="text-sm sm:text-base font-medium text-primary leading-snug tracking-tight transition-colors line-clamp-2">
+            {product.product_name}
+          </h3>
         </div>
 
-        <div className="flex items-center gap-4 mb-4">
-          <div className="flex items-center gap-1">
-            <ShieldCheck size={14} className="text-blue-500" />
-            <span className="text-[11px] font-medium text-gray-500">
-              Official Warranty
-            </span>
-          </div>
-          <div className="h-1 w-1 rounded-full bg-gray-300" />
-          <span
-            className={`text-[11px] font-bold ${product.stock_quantity > 0 ? "text-green-500" : "text-red-400"}`}
-          >
-            {product.stock_quantity > 0 ? "Ready Stock" : "Sold Out"}
+        <div className="flex flex-col min-w-0 mb-3 border-t border-gray-50 pt-2">
+          <span className="text-[9px] sm:text-xs text-gray-400 tracking-wide">
+            Harga
+          </span>
+          <span className="text-sm sm:text-lg font-medium text-primary tracking-tight">
+            {rupiahFormat(product.price)}
           </span>
         </div>
 
-        {/* Footer Card */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-          <div className="flex flex-col">
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-              Price
-            </span>
-            <span className="text-xl font-black text-gray-900 tracking-tight">
-              {rupiahFormat(product.price)}
-            </span>
-          </div>
-
-          <button className="h-11 px-6 bg-gray-100 hover:bg-gray-950 hover:text-white rounded-2xl flex items-center gap-2 transition-all duration-300 active:scale-95 group/btn">
-            <ShoppingCart
-              size={16}
-              className="group-hover/btn:rotate-12 transition-transform"
-            />
-            <span className="text-[12px] font-bold">Add</span>
-          </button>
-        </div>
+        <button
+          onClick={handleAddToCart}
+          className="w-full flex items-center justify-center mt-2 transition-all duration-300 active:scale-95 h-8 lg:h-10 px-3 lg:px-4 bg-primary hover:opacity-90 text-white rounded-xl text-xs font-medium gap-1 lg:gap-1.5 group/btn"
+          aria-label="Add to cart"
+        >
+          <ShoppingCart className="w-[12px] h-[12px] lg:w-[14px] lg:h-[14px]" />
+          <span>Tambahkan</span>
+        </button>
       </div>
     </motion.div>
   );

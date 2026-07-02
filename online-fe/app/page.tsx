@@ -42,8 +42,11 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentCatPage, setCurrentCatPage] = useState(0);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(6);
+  const [itemsPerPage] = useState<number>(6);
   const sliderRef = useRef<HTMLDivElement>(null);
+  const [currentProdPage, setCurrentProdPage] = useState(0);
+  const [productsPerPage] = useState<number>(4);
+  const productSliderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchHomeData();
@@ -58,6 +61,7 @@ export default function HomePage() {
 
   const maxPage = Math.max(0, categories.length - itemsPerPage);
   const limitedCategories = categories.slice(0, 12);
+  const maxProdPage = Math.max(0, featuredProducts.length - productsPerPage);
 
   useEffect(() => {
     if (sliderRef.current) {
@@ -72,6 +76,35 @@ export default function HomePage() {
       });
     }
   }, [currentCatPage, categories.length]);
+
+  useEffect(() => {
+    if (!productSliderRef.current || featuredProducts.length === 0) return;
+
+    const width = window.innerWidth;
+    const isDesktop = width >= 768;
+    const firstCard = productSliderRef.current.children[0];
+    if (!firstCard) return;
+
+    const cardWidth = firstCard.getBoundingClientRect().width;
+    const gap =
+      parseFloat(window.getComputedStyle(productSliderRef.current).gap) || 0;
+    const stepValue = cardWidth + gap;
+
+    if (!isDesktop) {
+      productSliderRef.current.scrollTo({
+        left: currentProdPage * stepValue,
+        behavior: "smooth",
+      });
+    } else {
+      productSliderRef.current.scrollLeft = 0;
+      gsap.to(productSliderRef.current, {
+        x: -currentProdPage * stepValue,
+        duration: 0.4,
+        ease: "power2.out",
+        overwrite: "auto",
+      });
+    }
+  }, [currentProdPage, featuredProducts.length]);
 
   const fetchHomeData = async () => {
     try {
@@ -274,7 +307,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="pb-32">
+        <section className="pb-32 overflow-hidden">
           <div className="flex items-end justify-between mb-20 border-b border-gray-100 pb-10">
             <div className="max-w-xl">
               <h1>
@@ -282,28 +315,78 @@ export default function HomePage() {
                 <span className="font-light text-secondary">Terlaris</span>
               </h1>
             </div>
-            <Link
-              href="/products"
-              className="group flex items-center gap-2 text-[10px] font-bold tracking-[0.3em] uppercase text-gray-400 hover:text-gray-950 transition-all"
-            >
-              Lihat Selengkapnya{" "}
-              <ChevronRight
-                size={14}
-                className="group-hover:translate-x-1 transition-transform"
-              />
-            </Link>
+
+            {featuredProducts.length > 4 ? (
+              <Link
+                href="/products"
+                className="hidden md:inline-flex items-center justify-end gap-1 text-xs md:text-sm lg:text-base font-bold text-secondary hover:text-primary transition-colors duration-200 group"
+              >
+                Lihat Selengkapnya{" "}
+                <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-[18px] md:h-[18px] group-hover:translate-x-1 transition-transform" />
+              </Link>
+            ) : null}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
-            {featuredProducts.map((product) => (
-              <motion.div
-                key={product.product_id}
-                whileHover={{ y: -10 }}
-                transition={{ duration: 0.3 }}
+          <div className="flex items-center gap-4 w-full justify-between relative">
+            {featuredProducts.length > productsPerPage ? (
+              <button
+                onClick={() =>
+                  setCurrentProdPage((prev) =>
+                    prev === 0 ? maxProdPage : prev - 1,
+                  )
+                }
+                className="absolute md:relative left-1 sm:left-2 md:left-auto top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 flex p-1.5 sm:p-2 md:p-3 rounded-full border border-gray-100 bg-white text-gray-950 shadow-lg md:shadow-md items-center justify-center flex-shrink-0 z-30 transition-all duration-300 enabled:hover:bg-gray-50 enabled:active:scale-95"
+                aria-label="Previous Product"
               >
-                <ProductCard product={product} />
-              </motion.div>
-            ))}
+                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-[18px] md:h-[18px]" />
+              </button>
+            ) : (
+              <div className="w-[32px] sm:w-[44px] flex-shrink-0" />
+            )}
+
+            <div className="flex-grow overflow-hidden px-1">
+              <div
+                ref={productSliderRef}
+                className="flex gap-4 sm:gap-6 will-change-transform overflow-x-auto md:overflow-x-visible snap-x snap-mandatory scroll-smooth scrollbar-none pb-4 md:pb-0"
+              >
+                {featuredProducts.slice(0, 12).map((product) => (
+                  <motion.div
+                    key={product.product_id}
+                    whileHover={{ y: -10 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-[calc(70%-12px)] md:w-[calc(40%-16px)] lg:w-[calc(25%-18px)] flex-shrink-0 snap-start transition-all duration-300"
+                  >
+                    <ProductCard product={product} />
+                  </motion.div>
+                ))}
+
+                {featuredProducts.length > 12 && (
+                  <motion.div
+                    whileHover={{ y: -10 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-[calc(70%-12px)] md:w-[calc(40%-16px)] lg:w-[calc(25%-18px)] flex-shrink-0 snap-start transition-all duration-300"
+                  >
+                    <ProductCard product={{} as any} isPlaceholder={true} />
+                  </motion.div>
+                )}
+              </div>
+            </div>
+
+            {featuredProducts.length > productsPerPage ? (
+              <button
+                onClick={() =>
+                  setCurrentProdPage((prev) =>
+                    prev >= maxProdPage ? 0 : prev + 1,
+                  )
+                }
+                className="absolute md:relative right-1 sm:right-2 md:right-auto top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 flex p-1.5 sm:p-2 md:p-3 rounded-full border border-gray-100 bg-white text-gray-950 shadow-lg md:shadow-md items-center justify-center flex-shrink-0 z-30 transition-all duration-300 enabled:hover:bg-gray-50 enabled:active:scale-95"
+                aria-label="Next Product"
+              >
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 md:w-[18px] md:h-[18px]" />
+              </button>
+            ) : (
+              <div className="w-[32px] sm:w-[44px] flex-shrink-0" />
+            )}
           </div>
         </section>
       </div>
