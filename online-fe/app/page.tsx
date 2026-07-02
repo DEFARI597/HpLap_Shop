@@ -319,7 +319,7 @@ export default function HomePage() {
             {featuredProducts.length > 4 ? (
               <Link
                 href="/products"
-                className="hidden md:inline-flex items-center justify-end gap-1 text-xs md:text-sm lg:text-base font-bold text-secondary hover:text-primary transition-colors duration-200 group"
+                className="hidden md:inline-flex items-center justify-end gap-1 text-xs md:text-sm lg:text-medium font-bold text-secondary hover:text-primary transition-colors duration-200 group"
               >
                 Lihat Selengkapnya{" "}
                 <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-[18px] md:h-[18px] group-hover:translate-x-1 transition-transform" />
