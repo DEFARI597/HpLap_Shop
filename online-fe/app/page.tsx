@@ -64,18 +64,25 @@ export default function HomePage() {
   const maxProdPage = Math.max(0, featuredProducts.length - productsPerPage);
 
   useEffect(() => {
-    if (sliderRef.current) {
-      const stepPercent = 100 / categories.length;
-      const finalXPercent = -currentCatPage * stepPercent;
+    if (!sliderRef.current || limitedCategories.length === 0) return;
 
-      gsap.to(sliderRef.current, {
-        xPercent: finalXPercent,
-        duration: 0.4,
-        ease: "power2.out",
-        overwrite: "auto",
-      });
-    }
-  }, [currentCatPage, categories.length]);
+    const firstCard = sliderRef.current.children[0] as HTMLElement;
+    if (!firstCard) return;
+
+    const cardWidth = firstCard.getBoundingClientRect().width;
+    const gap = parseFloat(window.getComputedStyle(sliderRef.current).gap) || 0;
+    const stepValue = cardWidth + gap;
+    const itemsPerPage = 6;
+    const maxCatPage = Math.max(0, limitedCategories.length - itemsPerPage);
+    const targetPage = Math.min(currentCatPage, maxCatPage);
+
+    gsap.to(sliderRef.current, {
+      x: -targetPage * stepValue,
+      duration: 0.4,
+      ease: "power2.out",
+      overwrite: "auto",
+    });
+  }, [currentCatPage, limitedCategories.length]);
 
   useEffect(() => {
     if (!productSliderRef.current || featuredProducts.length === 0) return;
